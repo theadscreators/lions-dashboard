@@ -115,7 +115,8 @@ export function Ajustes({ t }) {
           {requests.length === 0 && <div style={{ color: t.muted, padding: 20 }}>No hay solicitudes abiertas.</div>}
 
           {requests.map(req => (
-            <div key={req.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, boxShadow: t.shadow, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <React.Fragment key={req.id}>
+              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, boxShadow: t.shadow, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
                 {/* Status Indicator */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 80 }}>
