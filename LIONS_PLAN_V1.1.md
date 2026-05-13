@@ -22,7 +22,7 @@ El sistema debe incentivar la venta mostrando claramente los **Minutos Disponibl
 *   **2.1 Copia Local Constante:** Utilizar la base de datos (Supabase) como "fuente de la verdad". Se guardará el fixture consultando la API deportiva, lo cual evita límites de requests y permite tener el historial a largo plazo de partidos ya jugados con sus links.
 *   **2.2 Edición Manual y Localización:** Los productores podrán editar el horario de un partido si hay reprogramaciones. Además, la UI mostrará siempre el horario del estadio y la hora equivalente en **Buenos Aires (ART)**.
 *   **2.3 Agrupación Temporal:** La Agenda mostrará los partidos separados claramente por bloques temporales: "Este Fin de Semana", "Próximo Fin de Semana", etc., facilitando la prospección de ventas.
-*   **2.4 Gestión Dinámica de Equipos:** Capacidad de agregar nuevos equipos/clubes (ej: Vallas Fijas u otros sin historial) en cualquier momento directamente desde la plataforma para poder asignarles partidos.
+*   **2.4 Gestión Dinámica de Paises y Equipos:** Capacidad de agregar nuevos **Países/Ligas** (ej: Paraguay) y nuevos **Clubes** (ej: Vallas Fijas u otros sin historial) en cualquier momento directamente desde la plataforma para poder asignarles partidos.
 
 ---
 

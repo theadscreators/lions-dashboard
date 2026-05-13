@@ -28,58 +28,46 @@ export function useAuth() {
     return data;
   }, []);
 
-  // Listen for auth state changes
+  // Initial session check and auth change listener
   useEffect(() => {
-    // Get initial session
-    const checkSession = async () => {
+    let active = true;
+
+    const initialize = async () => {
       try {
-        // Set a safety timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Auth session check timed out")), 5000);
-        });
-
-        const getSessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
         
-        const { data: { session }, error } = await Promise.race([
-          getSessionPromise,
-          timeoutPromise
-        ]);
-
-        if (error) throw error;
-
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
-          await fetchProfile(currentUser.id);
+          await fetchProfile(currentUser.id).catch(e => console.error("Profile fetch error:", e));
         }
-      } catch (err) {
-        console.error("Error checking auth session:", err);
-        // If it timed out or failed, clear local storage to fix potential corruption
-        localStorage.removeItem('sb-snjtpmtzfeqpkuxnxxjg-auth-token');
-        setUser(null);
-        setProfile(null);
+      } catch (e) {
+        console.error("Init error:", e);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
-    checkSession();
+    initialize();
 
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          await fetchProfile(currentUser.id);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!active) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        await fetchProfile(currentUser.id).catch(e => console.error("Auth change profile fetch error:", e));
+      } else {
+        setProfile(null);
       }
-    );
+      setLoading(false);
+    });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
 
   // Login with email/password

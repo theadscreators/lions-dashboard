@@ -15,15 +15,29 @@ export function useClubs() {
   const [error, setError] = useState(null);
 
   const fetchAll = async () => {
+    // Prevent multiple concurrent fetches
     setLoading(true);
     setError(null);
+    
+    let timeoutId;
     try {
-      const [countriesRes, leaguesRes, clubsRes, clientsRes] = await Promise.all([
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Data fetch timed out (10s)")), 10000);
+      });
+
+      const fetchPromise = Promise.all([
         supabase.from("countries").select("*").order("name"),
         supabase.from("leagues").select("*"),
         supabase.from("clubs").select("*").order("name"),
         supabase.from("clients").select("*"),
       ]);
+
+      const [countriesRes, leaguesRes, clubsRes, clientsRes] = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]);
+      
+      clearTimeout(timeoutId);
 
       if (countriesRes.error) throw countriesRes.error;
       if (leaguesRes.error) throw leaguesRes.error;
@@ -35,6 +49,7 @@ export function useClubs() {
       setClubs(clubsRes.data || []);
       setClients(clientsRes.data || []);
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error("Error fetching data from Supabase:", err);
       setError(err.message || "Error al cargar datos");
     } finally {
@@ -42,8 +57,16 @@ export function useClubs() {
     }
   };
 
+  // We want to fetch data on mount AND whenever the auth state changes
+  // because RLS depends on the current user.
   useEffect(() => {
     fetchAll();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchAll();
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Transform into the PAISES format the UI expects

@@ -16,9 +16,11 @@ import {
 import { StackedBar } from "../components/ui/StackedBar";
 import { DashboardAlerts } from "../components/ui/DashboardAlerts";
 import { useNavigate, Navigate } from "react-router-dom";
+import { useMatches } from "../hooks/useMatches";
 
 export function Panel({ t, auth, paises }) {
   const { role, profile, isAdmin, isProducer, isStaff } = auth;
+  const { matches, loading: matchesLoading } = useMatches(isAdmin || isProducer ? null : profile?.club_ids?.[0]);
 
   // Global calculations
   const allEquipos = paises.flatMap(p => p.equipos);
@@ -130,9 +132,31 @@ function AdminDashboard({ t, stats, occupancy, paises, profile }) {
             <div style={{ fontSize: 13, fontWeight: 800, color: t.text }}>PRÓXIMOS PARTIDOS</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-             <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
-               Sincronizando con agenda oficial...
-             </div>
+            {matchesLoading ? (
+              <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
+                Cargando agenda...
+              </div>
+            ) : matches.length === 0 ? (
+              <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
+                No hay partidos programados.
+              </div>
+            ) : (
+              matches.slice(0, 4).map(m => (
+                <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                       <span style={{ fontSize: 10, fontWeight: 900, color: t.lions }}>{new Date(m.match_date).getDate()}</span>
+                       <span style={{ fontSize: 8, fontWeight: 700, color: t.muted }}>{new Date(m.match_date).toLocaleString('es', { month: 'short' }).toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{m.home_club?.name} vs {m.away_club?.name || m.away_team_name}</div>
+                      <div style={{ fontSize: 9, color: t.muted }}>{new Date(m.match_date).getHours()}:{new Date(m.match_date).getMinutes().toString().padStart(2, '0')}hs</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: t.accent }}>{m.current_status.toUpperCase()}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
