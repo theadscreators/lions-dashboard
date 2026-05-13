@@ -85,5 +85,24 @@ export function useMatches(clubId = null) {
     }
   };
 
-  return { matches, loading, error, refetch: fetchMatches, addMatchEvent };
+  const addMatch = async (homeClubId, awayTeamName, matchDate, venue, operationalNotes = "") => {
+    try {
+      const { error } = await supabase.from("matches").insert({
+        home_club_id: homeClubId,
+        away_team_name: awayTeamName,
+        match_date: matchDate,
+        venue: venue || null,
+        operational_notes: operationalNotes || null,
+        current_status: "scheduled"
+      });
+      if (error) throw error;
+      await fetchMatches();
+      return true;
+    } catch (err) {
+      console.error("Error adding match:", err);
+      return false;
+    }
+  };
+
+  return { matches, loading, error, refetch: fetchMatches, addMatchEvent, addMatch };
 }

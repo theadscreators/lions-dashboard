@@ -18,7 +18,7 @@ import { Ajustes } from "./pages/Ajustes";
 import { WorkLog } from "./pages/WorkLog";
 import { TeamDetail } from "./components/teams/TeamDetail";
 
-function MainLayout({ dark, setDark, t, auth, paises }) {
+function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const location = useLocation();
 
@@ -68,13 +68,29 @@ function MainLayout({ dark, setDark, t, auth, paises }) {
             <Route path="/" element={<Panel t={t} auth={auth} paises={paises} />} />
             <Route path="/ligas" element={
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                {(auth.isAdmin || auth.isProducer) && (
+                  <div style={{ display: "flex", gap: 10, background: t.card, padding: 16, borderRadius: 12, border: `1px solid ${t.border}` }}>
+                    <button onClick={() => {
+                      const name = prompt("Nombre del país:");
+                      const code = prompt("Código ISO de 2 letras (ej: py):");
+                      const flag = prompt("Emoji de la bandera:");
+                      if (name && code) addCountry(name, code, flag);
+                    }} style={{ padding: "8px 16px", borderRadius: 8, background: t.accent, color: "#fff", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>+ Añadir País</button>
+                    
+                    <button onClick={() => {
+                      const countryCode = prompt("Código del país al que pertenece (ej: cl, py):");
+                      const name = prompt("Nombre del nuevo club:");
+                      if (countryCode && name) addClub(countryCode, name, null);
+                    }} style={{ padding: "8px 16px", borderRadius: 8, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>+ Añadir Equipo</button>
+                  </div>
+                )}
                 {paises.filter(p => p.activo).map(pais => (
                   <Ligas key={pais.id} pais={pais} t={t} onSelectTeam={setSelectedTeam} />
                 ))}
               </div>
             } />
             <Route path="/clientes" element={<Clientes t={t} paises={paises} />} />
-            <Route path="/agenda" element={<Agenda t={t} />} />
+            <Route path="/agenda" element={<Agenda t={t} paises={paises} />} />
             <Route path="/ajustes" element={<Ajustes t={t} />} />
             <Route path="/log" element={<WorkLog t={t} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -110,7 +126,7 @@ export default function App() {
   const [dark, setDark] = useState(false);
   const t = dark ? T.dark : T.light;
   const auth = useAuth();
-  const { paises: supabasePaises, loading: dataLoading, error: dataError } = useClubs();
+  const { paises: supabasePaises, loading: dataLoading, error: dataError, addCountry, addClub } = useClubs();
 
   // Use Supabase data if available, otherwise fallback to local data
   const paises = supabasePaises.length > 0 ? supabasePaises : FALLBACK_PAISES;
@@ -172,7 +188,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} />
+      <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />
     </BrowserRouter>
   );
 }

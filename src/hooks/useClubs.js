@@ -103,5 +103,43 @@ export function useClubs() {
     });
   }, [countries, leagues, clubs, clients]);
 
-  return { paises, loading, error, refetch: fetchAll };
+  // Actions for Admin
+  const addCountry = async (name, code, flag_emoji) => {
+    try {
+      const { data, error } = await supabase.from("countries").insert({ name, code, flag_emoji, active: true }).select().single();
+      if (error) throw error;
+      // Auto-create a default league for the country
+      const { error: leagueError } = await supabase.from("leagues").insert({ country_id: data.id, name: `Primera ${name}` });
+      if (leagueError) console.error("Error creating default league:", leagueError);
+      await fetchAll();
+      return true;
+    } catch (err) {
+      console.error("Error adding country:", err);
+      return false;
+    }
+  };
+
+  const addClub = async (countryCode, name, logoUrl) => {
+    try {
+      const country = countries.find(c => c.code === countryCode);
+      if (!country) throw new Error("Country not found");
+      const league = leagues.find(l => l.country_id === country.id);
+      if (!league) throw new Error("No league found for this country");
+
+      const { error } = await supabase.from("clubs").insert({
+        league_id: league.id,
+        name,
+        logo_url: logoUrl || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+        status: "activo"
+      });
+      if (error) throw error;
+      await fetchAll();
+      return true;
+    } catch (err) {
+      console.error("Error adding club:", err);
+      return false;
+    }
+  };
+
+  return { paises, loading, error, refetch: fetchAll, addCountry, addClub };
 }

@@ -7,14 +7,11 @@ import { Calendar, MapPin, CheckCircle, UploadCloud, Download, AlertCircle, Cloc
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-export function Agenda({ t }) {
-  const { auth } = useAuth(); // Wait, App.jsx does not pass auth to Agenda directly, it passes auth to MainLayout but MainLayout uses <Routes>
-  // Actually, I should use the hook directly inside Agenda, or pass it from App.jsx
-  // Let's use the hook directly for simplicity.
+export function Agenda({ t, paises = [] }) {
   const { user, profile, isAdmin, isProducer } = useAuth();
   
   const myClubId = profile?.club_ids?.[0] || null;
-  const { matches, loading, addMatchEvent } = useMatches(isAdmin || isProducer ? null : myClubId);
+  const { matches, loading, addMatchEvent, addMatch } = useMatches(isAdmin || isProducer ? null : myClubId);
 
   const [uploadUrl, setUploadUrl] = useState("");
   const [activeUpload, setActiveUpload] = useState(null);
@@ -145,12 +142,28 @@ export function Agenda({ t }) {
     return null;
   };
 
+  const [showAddMatch, setShowAddMatch] = useState(false);
+  
   return (
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.3s" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: t.text, margin: "0 0 8px" }}>📅 Agenda y Playlists</h1>
-        <p style={{ color: t.muted, fontSize: 13, margin: 0 }}>Gestioná la confirmación de partidos y la entrega de material por fecha.</p>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: t.text, margin: "0 0 8px" }}>📅 Agenda y Playlists</h1>
+          <p style={{ color: t.muted, fontSize: 13, margin: 0 }}>Gestioná la confirmación de partidos y la entrega de material por fecha.</p>
+        </div>
+        {(isAdmin || isProducer) && (
+          <button onClick={() => setShowAddMatch(true)} style={{ padding: "10px 16px", borderRadius: 10, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12 }}>
+            + Añadir Partido Manual
+          </button>
+        )}
       </div>
+
+      {showAddMatch && (
+        <AddMatchModal t={t} paises={paises} onClose={() => setShowAddMatch(false)} onSave={async (data) => {
+          await addMatch(data.homeClubId, data.awayTeamName, data.matchDate, data.venue, data.notes);
+          setShowAddMatch(false);
+        }} />
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {matches.length === 0 && <div style={{ color: t.muted, padding: 20 }}>No hay partidos programados.</div>}
@@ -261,6 +274,71 @@ export function Agenda({ t }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function AddMatchModal({ t, paises, onClose, onSave }) {
+  const [homeClubId, setHomeClubId] = useState("");
+  const [awayTeamName, setAwayTeamName] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [venue, setVenue] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const allClubs = paises.flatMap(p => p.equipos);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!homeClubId || !awayTeamName || !date || !time) return;
+    onSave({
+      homeClubId,
+      awayTeamName,
+      matchDate: `${date}T${time}:00`,
+      venue,
+      notes
+    });
+  };
+
+  const inputStyle = { width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontFamily: FONT, boxSizing: "border-box", marginBottom: 12 };
+
+  return (
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: t.card, borderRadius: 16, padding: 24, width: "100%", maxWidth: 400, boxShadow: t.shadow, border: `1px solid ${t.border}` }}>
+        <h3 style={{ margin: "0 0 16px", color: t.text, fontSize: 18, fontWeight: 900 }}>Añadir Partido Manual</h3>
+        <form onSubmit={handleSubmit}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: t.muted, marginBottom: 4 }}>CLUB LOCAL (LIONS)</label>
+          <select value={homeClubId} onChange={e => setHomeClubId(e.target.value)} style={inputStyle} required>
+            <option value="">Seleccione el club local...</option>
+            {allClubs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+
+          <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: t.muted, marginBottom: 4 }}>EQUIPO VISITANTE</label>
+          <input type="text" value={awayTeamName} onChange={e => setAwayTeamName(e.target.value)} placeholder="Ej: Colo-Colo" style={inputStyle} required />
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: t.muted, marginBottom: 4 }}>FECHA</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} required />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: t.muted, marginBottom: 4 }}>HORA (LOCAL)</label>
+              <input type="time" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} required />
+            </div>
+          </div>
+
+          <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: t.muted, marginBottom: 4 }}>ESTADIO (Opcional)</label>
+          <input type="text" value={venue} onChange={e => setVenue(e.target.value)} placeholder="Estadio..." style={inputStyle} />
+
+          <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: t.amber, marginBottom: 4 }}>NOTAS OPERATIVAS / PREMIUM</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="KO1 COOLBET&#10;GOL EPICBET..." style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} />
+
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, borderRadius: 10, background: t.bg, color: t.text, border: `1px solid ${t.border}`, cursor: "pointer", fontWeight: 800 }}>Cancelar</button>
+            <button type="submit" style={{ flex: 1, padding: 12, borderRadius: 10, background: t.accent, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800 }}>Guardar Partido</button>
+          </div>
+        </form>
       </div>
     </div>
   );
