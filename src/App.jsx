@@ -191,7 +191,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/public/:id" element={<PublicMatch t={t} />} />
         <Route path="*" element={<MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />} />

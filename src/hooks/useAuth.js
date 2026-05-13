@@ -34,13 +34,16 @@ export function useAuth() {
     const checkSession = async () => {
       try {
         // Set a safety timeout
-        const timeout = setTimeout(() => {
-          console.warn("Auth session check timed out (15s)");
-          setLoading(false);
-        }, 15000);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Auth session check timed out")), 5000);
+        });
 
-        const { data: { session }, error } = await supabase.auth.getSession();
-        clearTimeout(timeout);
+        const getSessionPromise = supabase.auth.getSession();
+        
+        const { data: { session }, error } = await Promise.race([
+          getSessionPromise,
+          timeoutPromise
+        ]);
 
         if (error) throw error;
 
@@ -51,6 +54,10 @@ export function useAuth() {
         }
       } catch (err) {
         console.error("Error checking auth session:", err);
+        // If it timed out or failed, clear local storage to fix potential corruption
+        localStorage.removeItem('sb-snjtpmtzfeqpkuxnxxjg-auth-token');
+        setUser(null);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
