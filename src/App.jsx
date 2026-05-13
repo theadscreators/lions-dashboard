@@ -149,10 +149,10 @@ export default function App() {
     );
   }
 
-  // Check if it's a public route before enforcing login
+  // Check if it's a public route
   const isPublicRoute = window.location.pathname.includes('/public/');
 
-  // Show login if not authenticated and not a public route
+  // IF NOT LOGGED IN and NOT PUBLIC -> SHOW LOGIN IMMEDIATELY
   if (!auth.user && !isPublicRoute) {
     return (
       <Login
@@ -164,22 +164,22 @@ export default function App() {
     );
   }
 
-  // Show error if data failed
-  if (dataError) {
+  // ONLY AFTER LOGIN (or if public), we care about data loading errors
+  if (dataError && !isPublicRoute) {
     return (
       <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, padding: 20 }}>
         <div style={{ textAlign: "center", background: t.card, padding: 32, borderRadius: 20, border: `1px solid ${t.border}` }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-          <div style={{ color: t.text, fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Error al cargar datos</div>
-          <div style={{ color: t.muted, fontSize: 12, maxWidth: 300, marginBottom: 20 }}>{dataError}</div>
+          <div style={{ color: t.text, fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Error de conexión</div>
+          <div style={{ color: t.muted, fontSize: 12, maxWidth: 300, marginBottom: 20 }}>No se pudo conectar con Supabase. {dataError}</div>
           <button onClick={() => window.location.reload()} style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: t.accent, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Reintentar</button>
         </div>
       </div>
     );
   }
 
-  // Show loading while data loads
-  if (dataLoading) {
+  // ONLY AFTER LOGIN, we show the loading data screen
+  if (dataLoading && !isPublicRoute) {
     return (
       <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
         <div style={{ textAlign: "center" }}>
