@@ -17,6 +17,7 @@ import { Agenda } from "./pages/Agenda";
 import { Ajustes } from "./pages/Ajustes";
 import { WorkLog } from "./pages/WorkLog";
 import { TeamDetail } from "./components/teams/TeamDetail";
+import { PublicMatch } from "./pages/PublicMatch";
 
 function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -148,8 +149,11 @@ export default function App() {
     );
   }
 
-  // Show login if not authenticated
-  if (!auth.user) {
+  // Check if it's a public route before enforcing login
+  const isPublicRoute = window.location.pathname.includes('/public/');
+
+  // Show login if not authenticated and not a public route
+  if (!auth.user && !isPublicRoute) {
     return (
       <Login
         onLogin={auth.login}
@@ -188,7 +192,10 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />
+      <Routes>
+        <Route path="/public/:id" element={<PublicMatch t={t} />} />
+        <Route path="*" element={<MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />} />
+      </Routes>
     </BrowserRouter>
   );
 }

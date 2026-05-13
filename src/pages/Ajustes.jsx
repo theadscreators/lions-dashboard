@@ -18,7 +18,6 @@ export function Ajustes({ t }) {
     title: "",
     type: "update_arte",
     description: "",
-    priority: "normal",
     club_id: profile?.club_ids?.[0] || ""
   });
 
@@ -51,7 +50,7 @@ export function Ajustes({ t }) {
     e.preventDefault();
     await createRequest(newReq);
     setShowModal(false);
-    setNewReq({ title: "", type: "update_arte", description: "", priority: "normal", club_id: profile?.club_ids?.[0] || "" });
+    setNewReq({ title: "", type: "update_arte", description: "", club_id: profile?.club_ids?.[0] || "" });
   };
 
   const getStatusColor = (status) => {
@@ -133,9 +132,6 @@ export function Ajustes({ t }) {
                 {/* Content */}
                 <div style={{ borderLeft: `1px solid ${t.border}`, paddingLeft: 20 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: req.priority === 'urgente' ? t.accent : req.priority === 'alta' ? t.amber : t.muted, padding: "2px 8px", borderRadius: 10 }}>
-                      {req.priority.toUpperCase()}
-                    </div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: t.lions }}>{getTypeLabel(req.type)}</div>
                     {req.club && <div style={{ fontSize: 11, color: t.muted }}>· {req.club.name}</div>}
                   </div>
@@ -221,16 +217,6 @@ export function Ajustes({ t }) {
                     <option value="baja_club">Baja cliente CLUB</option>
                     <option value="mod_club">Modificar min. CLUB</option>
                     <option value="update_arte">Actualización de Arte</option>
-                  </select>
-                </div>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>PRIORIDAD</label>
-                  <select value={newReq.priority} onChange={e => setNewReq({...newReq, priority: e.target.value})} style={{ padding: 12, borderRadius: 10, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontFamily: FONT }}>
-                    <option value="baja">Baja</option>
-                    <option value="normal">Normal</option>
-                    <option value="alta">Alta</option>
-                    <option value="urgente">Urgente</option>
                   </select>
                 </div>
               </div>

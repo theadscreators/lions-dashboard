@@ -77,7 +77,7 @@ export function Agenda({ t, paises = [] }) {
       );
     }
 
-    if (current_status === 'all_confirmed' && isProdOrAdmin) {
+    if (current_status === 'all_confirmed' && isAdmin) {
       if (activeUpload === id) {
         return (
           <div style={{ display: "flex", gap: 8, width: "100%" }}>
@@ -108,36 +108,48 @@ export function Agenda({ t, paises = [] }) {
               <CheckCircle size={14} /> Aprobar Playlist
             </button>
           )}
-          {isProdOrAdmin && !hasProdApproved && (
+          {isAdmin && !hasProdApproved && (
             <button onClick={() => handleEvent(id, 'producer_approved')} style={btnStyle(t.green, "#fff")}>
-              <CheckCircle size={14} /> Aprobar (Productor)
+              <CheckCircle size={14} /> Aprobar (Lions Admin)
             </button>
           )}
           {(hasClubApproved || hasProdApproved) && (
-            <span style={{ fontSize: 11, color: t.muted }}>Falta aprobación de {hasClubApproved ? 'Lions' : 'Club'}</span>
+            <span style={{ fontSize: 11, color: t.muted }}>Falta aprobación de {hasClubApproved ? 'Admin Lions' : 'Club'}</span>
           )}
         </div>
       );
     }
 
-    if (current_status === 'approved') {
+    if (current_status === 'approved' || current_status === 'delivered') {
+      const publicLink = `${window.location.origin}${import.meta.env.BASE_URL}public/${id}`;
       return (
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {/* Link Público Generado */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: `${t.lions}15`, padding: "6px 12px", borderRadius: 8, border: `1px solid ${t.lions}40` }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: t.lions }}>LINK PÚBLICO:</span>
+            <input type="text" readOnly value={publicLink} style={{ fontSize: 11, padding: 4, background: "transparent", border: "none", color: t.text, width: 180 }} onClick={e => e.target.select()} />
+            <button onClick={() => { navigator.clipboard.writeText(publicLink); alert("Link copiado!"); }} style={{ ...btnStyle(t.lions, "#fff"), padding: "4px 8px" }}>Copiar</button>
+          </div>
+
           <a href={match.playlist_url} target="_blank" rel="noreferrer" style={{ ...btnStyle(`${t.accent}15`, t.accent), textDecoration: "none" }}>
-            <Download size={14} /> Descargar Archivo Final
+            <Download size={14} /> Bajar Playlist
           </a>
-          {(isOperator || isProdOrAdmin) && (
+          
+          {current_status === 'approved' && isAdmin && (
             <button onClick={() => handleEvent(id, 'delivered')} style={btnStyle(t.green, "#fff")}>
-              <CheckCircle size={14} /> Marcar como Entregado
+              <CheckCircle size={14} /> Entregar Operador
             </button>
           )}
+          {current_status === 'delivered' && (
+            <div style={{ fontSize: 12, fontWeight: 800, color: t.green, display: "flex", alignItems: "center", gap: 6 }}>
+              <CheckCircle size={16} /> Entregado
+            </div>
+          )}
         </div>
       );
     }
 
-    if (current_status === 'delivered') {
-      return <div style={{ fontSize: 12, fontWeight: 800, color: t.green, display: "flex", alignItems: "center", gap: 6 }}><CheckCircle size={16} /> Entregado al operador</div>;
-    }
+    // Remove the separate 'delivered' block since it's merged above
 
     return null;
   };
@@ -165,24 +177,44 @@ export function Agenda({ t, paises = [] }) {
         }} />
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {matches.length === 0 && <div style={{ color: t.muted, padding: 20 }}>No hay partidos programados.</div>}
         
-        {matches.map(match => {
-          const homeName = match.home_club?.name || "Local";
-          const homeLogo = match.home_club?.logo_url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
-          const awayName = match.away_club?.name || match.away_team_name || "Visitante";
-          const awayLogo = match.away_club?.logo_url || match.away_team_logo || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
-          
-          const statusInfo = getStatusInfo(match.current_status);
-          const dateStr = format(new Date(match.match_date), "EEEE d 'de' MMMM, HH:mm'hs'", { locale: es });
+        {['Hoy y Mañana', 'Próximos 7 Días', 'Futuros'].map(groupName => {
+          const groupMatches = matches.filter(match => {
+            const matchDate = new Date(match.match_date);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const diffTime = matchDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (groupName === 'Hoy y Mañana') return diffDays <= 1;
+            if (groupName === 'Próximos 7 Días') return diffDays > 1 && diffDays <= 7;
+            return diffDays > 7;
+          });
 
-          const clients = match.home_club?.clients || [];
-          const stats = calcStats(clients);
-          const hasAvailable = stats.disponibles > 0;
+          if (groupMatches.length === 0) return null;
 
-          // Ultra-simplified view for Operators
-          if (profile?.role === 'operator') {
+          return (
+            <div key={groupName}>
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: t.text, textTransform: "uppercase", letterSpacing: 1, borderBottom: `2px solid ${t.border}`, paddingBottom: 8, marginBottom: 16 }}>{groupName}</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {groupMatches.map(match => {
+                  const homeName = match.home_club?.name || "Local";
+                  const homeLogo = match.home_club?.logo_url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
+                  const awayName = match.away_club?.name || match.away_team_name || "Visitante";
+                  const awayLogo = match.away_club?.logo_url || match.away_team_logo || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
+                  
+                  const statusInfo = getStatusInfo(match.current_status);
+                  const dateStr = format(new Date(match.match_date), "EEEE d 'de' MMMM, HH:mm'hs'", { locale: es });
+
+                  const clients = match.home_club?.clients || [];
+                  const stats = calcStats(clients);
+                  const hasAvailable = stats.disponibles > 0;
+
+                  // Ultra-simplified view for Operators
+                  if (profile?.role === 'operator') {
             return (
               <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", boxShadow: t.shadow }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1 }}>
@@ -270,6 +302,10 @@ export function Agenda({ t, paises = [] }) {
               {/* Actions Area */}
               <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${t.border}`, display: "flex", justifyContent: "flex-end" }}>
                 {renderActions(match)}
+              </div>
+            </div>
+          );
+        })}
               </div>
             </div>
           );

@@ -58,7 +58,32 @@ export function WorkLog({ t }) {
   }
 
   const handleExport = () => {
-    alert("Exportando a Excel (Simulado)... Esta función genera un archivo .xlsx con el formato oficial.");
+    const headers = ["ID", "Fecha", "Club", "Partido", "Tipo/Tarea", "Descripcion", "Cobrar A", "Valor Neto", "Estado"];
+    const rows = filteredEntries.map(e => [
+      e.id,
+      format(parseISO(e.date_done), "yyyy-MM-dd"),
+      e.club?.name || "",
+      e.match ? `${e.match.home_club?.name} vs ${e.match.away_club?.name || e.match.away_team_name}` : "",
+      e.task_type || "",
+      e.description || "",
+      e.billing_type || "",
+      e.net_value || "0",
+      e.status || ""
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Lions_WorkLog_${filterMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
