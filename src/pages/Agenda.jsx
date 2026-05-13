@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { FONT } from "../theme/theme";
 import { useAuth } from "../hooks/useAuth";
 import { useMatches } from "../hooks/useMatches";
-import { Calendar, MapPin, CheckCircle, UploadCloud, Download, AlertCircle, Clock } from "lucide-react";
+import { calcStats } from "../lib/calcStats";
+import { Calendar, MapPin, CheckCircle, UploadCloud, Download, AlertCircle, Clock, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -163,6 +164,10 @@ export function Agenda({ t }) {
           const statusInfo = getStatusInfo(match.current_status);
           const dateStr = format(new Date(match.match_date), "EEEE d 'de' MMMM, HH:mm'hs'", { locale: es });
 
+          const clients = match.home_club?.clients || [];
+          const stats = calcStats(clients);
+          const hasAvailable = stats.disponibles > 0;
+
           // Ultra-simplified view for Operators
           if (profile?.role === 'operator') {
             return (
@@ -225,6 +230,27 @@ export function Agenda({ t }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.muted, fontSize: 12 }}>
                     <MapPin size={14} /> {match.venue || "Estadio a definir"} {match.city ? `(${match.city})` : ''}
                   </div>
+                </div>
+
+                {/* Sales & Notes (New V1.1) */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 180, borderLeft: `1px dashed ${t.border}`, paddingLeft: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5 }}>MINUTOS LIBRES:</span>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: hasAvailable ? t.green : t.gray, background: hasAvailable ? `${t.green}15` : `${t.gray}20`, padding: "4px 8px", borderRadius: 6 }}>
+                      {stats.disponibles > 0 ? `${stats.disponibles}' DISPONIBLES` : 'SOBREVENDIDO'}
+                    </span>
+                  </div>
+                  
+                  {match.operational_notes && (
+                    <div style={{ background: `${t.amber}15`, border: `1px solid ${t.amber}40`, padding: 8, borderRadius: 8, marginTop: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: t.amber, fontSize: 10, fontWeight: 800, marginBottom: 4 }}>
+                        <AlertTriangle size={12} /> NOTAS OPERATIVAS
+                      </div>
+                      <div style={{ fontSize: 11, color: t.text, fontWeight: 600, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>
+                        {match.operational_notes}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -23,9 +23,9 @@ export function BottomNav({ t, auth }) {
   } else {
     tabs = [
       { to: "/", icon: <LayoutDashboard size={20} />, label: "Panel" },
+      { to: "/agenda", icon: <Calendar size={20} />, label: "Agenda" },
       { to: "/ligas", icon: <ShieldAlert size={20} />, label: "Ligas" },
       { to: "/clientes", icon: <Users size={20} />, label: "Clientes" },
-      { to: "/agenda", icon: <Calendar size={20} />, label: "Agenda" },
       { to: "/ajustes", icon: <Settings size={20} />, label: "Ajustes" }
     ];
     if (isAdmin || isProducer) {

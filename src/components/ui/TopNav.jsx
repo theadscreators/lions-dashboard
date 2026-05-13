@@ -22,9 +22,9 @@ export function TopNav({ t, auth }) {
   } else {
     tabs = [
       { to: "/", label: "PANEL" },
+      { to: "/agenda", label: "AGENDA" },
       { to: "/ligas", label: "LIGAS" },
       { to: "/clientes", label: "CLIENTES" },
-      { to: "/agenda", label: "AGENDA" },
       { to: "/ajustes", label: "AJUSTES" },
     ];
     if (isAdmin || isProducer) {

@@ -14,7 +14,7 @@ export function useMatches(clubId = null) {
         .from("matches")
         .select(`
           *,
-          home_club:clubs!home_club_id(id, name, logo_url),
+          home_club:clubs!home_club_id(id, name, logo_url, clients(*)),
           away_club:clubs!away_club_id(id, name, logo_url)
         `)
         .order("match_date", { ascending: true });
