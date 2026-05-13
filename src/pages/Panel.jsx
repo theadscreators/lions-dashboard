@@ -82,7 +82,6 @@ function AdminDashboard({ t, stats, occupancy, paises, profile }) {
             <div style={{ fontSize: 24, fontWeight: 900, color: t.text }}>{fmt(stats.lions)}'</div>
           </div>
           <div style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5 }}>MINUTOS LIONS</div>
-          <div style={{ fontSize: 10, color: t.green, fontWeight: 700, marginTop: 4 }}>↑ 12% vs mes anterior</div>
         </div>
 
         <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, boxShadow: t.shadow }}>
@@ -131,27 +130,8 @@ function AdminDashboard({ t, stats, occupancy, paises, profile }) {
             <div style={{ fontSize: 13, fontWeight: 800, color: t.text }}>PRÓXIMOS PARTIDOS</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-             <div style={{ padding: 12, borderRadius: 12, background: t.bg, border: `1px solid ${t.border}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: t.muted }}>MAÑANA · 20:00</span>
-                  <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: t.accent, padding: "2px 6px", borderRadius: 4 }}>URGENTE</span>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: t.text }}>Palestino vs Colo-Colo</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6 }}>
-                  <Clock size={12} color={t.muted} />
-                  <span style={{ fontSize: 11, color: t.muted }}>Playlist pendiente de aprobación</span>
-                </div>
-             </div>
-             
-             <div style={{ padding: 12, borderRadius: 12, background: t.bg, border: `1px solid ${t.border}`, opacity: 0.7 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: t.muted }}>DOM 11 · 18:30</span>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: t.text }}>Emelec vs Barcelona SC</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6 }}>
-                  <Clock size={12} color={t.muted} />
-                  <span style={{ fontSize: 11, color: t.muted }}>Sin cambios reportados</span>
-                </div>
+             <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
+               Sincronizando con agenda oficial...
              </div>
           </div>
         </div>
