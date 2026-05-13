@@ -35,9 +35,9 @@ export function useAuth() {
       try {
         // Set a safety timeout
         const timeout = setTimeout(() => {
-          console.warn("Auth session check timed out");
+          console.warn("Auth session check timed out (15s)");
           setLoading(false);
-        }, 5000);
+        }, 15000);
 
         const { data: { session }, error } = await supabase.auth.getSession();
         clearTimeout(timeout);
@@ -87,9 +87,16 @@ export function useAuth() {
 
   // Logout
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Error during logout:", err);
+    } finally {
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+    }
   };
 
   // Derived state
