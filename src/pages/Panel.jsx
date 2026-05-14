@@ -38,14 +38,14 @@ export function Panel({ t, auth, paises }) {
   const totalPossible = activos.length * 90;
   const occupancyPercent = totalPossible > 0 ? Math.round((globalStats.total / totalPossible) * 100) : 0;
 
-  if (isStaff) return <AdminDashboard t={t} stats={globalStats} occupancy={occupancyPercent} paises={paises} profile={profile} />;
+  if (isStaff) return <AdminDashboard t={t} stats={globalStats} occupancy={occupancyPercent} paises={paises} profile={profile} matches={matches} matchesLoading={matchesLoading} />;
   
   if (role === 'operator') return <Navigate to="/agenda" replace />;
 
   return <ClubDashboard t={t} auth={auth} paises={paises} />;
 }
 
-function AdminDashboard({ t, stats, occupancy, paises, profile }) {
+function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], matchesLoading = false }) {
   // Top 3 Available Teams
   const topAvailable = paises
     .flatMap(p => p.equipos)
