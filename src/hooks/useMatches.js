@@ -1,13 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 
-export function useMatches(clubId = null) {
+/**
+ * Fetches matches from Supabase with status and events.
+ * @param {string|null} clubId - Filter by club ID, or null for all matches.
+ * @param {boolean} ready - Only fetch when true (i.e., user is authenticated).
+ */
+export function useMatches(clubId = null, ready = true) {
   const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       // Fetch matches with home and away club details
       let query = supabase
@@ -34,11 +40,15 @@ export function useMatches(clubId = null) {
 
       // Fetch all events for these matches to know who approved/confirmed
       const matchIds = matchesData.map(m => m.id);
-      const { data: eventsData, error: eventsError } = await supabase
-        .from("match_events")
-        .select("*")
-        .in("match_id", matchIds);
-      if (eventsError) throw eventsError;
+      let eventsData = [];
+      if (matchIds.length > 0) {
+        const { data, error: eventsError } = await supabase
+          .from("match_events")
+          .select("*")
+          .in("match_id", matchIds);
+        if (eventsError) throw eventsError;
+        eventsData = data || [];
+      }
 
       // Merge data
       const merged = matchesData.map(m => {
@@ -59,11 +69,16 @@ export function useMatches(clubId = null) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clubId]);
 
   useEffect(() => {
-    fetchMatches();
-  }, [clubId]);
+    if (ready) {
+      fetchMatches();
+    } else {
+      setMatches([]);
+      setLoading(false);
+    }
+  }, [ready, fetchMatches]);
 
   // Function to add a new event (change status)
   const addMatchEvent = async (matchId, eventType, actorId, actorName, payload = {}, notes = "") => {

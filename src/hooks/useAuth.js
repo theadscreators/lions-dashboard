@@ -32,25 +32,50 @@ export function useAuth() {
   useEffect(() => {
     let active = true;
 
-    // 1. Check for existing session on page load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!active) return;
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id)
-          .catch(e => console.error("Profile fetch error:", e))
-          .finally(() => { if (active) setLoading(false); });
-      } else {
-        setLoading(false);
-      }
-    }).catch(() => {
-      if (active) setLoading(false);
-    });
+    const initialize = async () => {
+      try {
+        // Race getSession against a 3-second timeout.
+        // Why: If there's an expired token in localStorage, the Supabase client
+        // tries to refresh it via network. On slow connections or cold-start
+        // of the Supabase project, this can hang for 10-30 seconds.
+        // We'd rather show the Login screen and let onAuthStateChange
+        // pick up the refreshed session in the background.
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((resolve) =>
+          setTimeout(() => resolve({ data: { session: null }, timedOut: true }), 3000)
+        );
 
-    // 2. Listen for future auth changes (login, logout, token refresh)
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        if (!active) return;
+
+        if (result.timedOut) {
+          console.warn("getSession timed out after 3s — showing Login. onAuthStateChange will restore session if token refreshes.");
+          setLoading(false);
+          return;
+        }
+
+        const session = result.data.session;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        if (currentUser) {
+          await fetchProfile(currentUser.id).catch(e => 
+            console.error("Profile fetch error:", e)
+          );
+        }
+      } catch (e) {
+        console.error("Auth init error:", e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    initialize();
+
+    // Listen for future auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         if (!active) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);

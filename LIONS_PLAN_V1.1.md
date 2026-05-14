@@ -9,12 +9,41 @@ El sistema debe incentivar la venta mostrando claramente los **Minutos Disponibl
 
 ---
 
-## 🏗️ Etapa 1: UI/UX "Pro Max" y Navegación (Mejora Estética y Funcional)
-*   **1.1 Rediseño Visual:** Implementar un diseño más premium, usando tarjetas limpias, animaciones suaves al cargar o interactuar, y un layout amigable (referencia: UI/UX Pro Max).
-*   **1.2 Enfoque en Minutos:** La métrica más grande y llamativa en cada tarjeta de partido debe ser los **"Minutos Libres"**. 
-*   **1.3 Indicadores de Estado Visuales:** Usar colores y etiquetas claras para los estados de los partidos: Pendiente (Gris/Naranja) -> En Proceso (Azul) -> Listo (Verde con acceso inmediato al link de descarga).
-*   **1.4 Limpieza de Datos:** Eliminar estadísticas falsas del Dashboard (ej: "+12% vs mes anterior") y asegurar que todas las métricas deriven de data real.
-*   **1.5 Botón Global de Backup:** Un botón siempre visible (para Admin/Producers) para descargar toda la data operativa (Work Log y Minutos) en un solo Spreadsheet ordenado.
+## ⚙️ Etapa 0: Core y Saneamiento Técnico (BLOQUEANTE)
+
+> [!CAUTION]
+> Estos problemas deben resolverse ANTES de cualquier otra cosa. Sin esto, nadie puede usar el dashboard.
+
+### 0.1 — Auth: Restauración de Sesión Cuelga la App
+- **Síntoma:** Al recargar la página (F5), se queda en "Iniciando sesión..." para siempre.
+- **Causa raíz:** `supabase.auth.getSession()` intenta refrescar un token expirado haciendo una llamada de red. Si esa llamada es lenta o falla silenciosamente, la Promise nunca se resuelve.
+- **Fix:** Agregar un timeout de 3 segundos a `getSession()`. Si expira, asumir sesión nula y mostrar Login. El `onAuthStateChange` se encargará de restaurar si el token se refresca en background.
+
+### 0.2 — useMatches: Fetch sin Guardia de Auth
+- **Síntoma:** Al navegar a Agenda, la página queda en blanco (crash silencioso).
+- **Causa raíz:** `useMatches` hace fetch inmediatamente al montarse (`useEffect([], [clubId])`). Si el usuario tiene sesión pero `clubId` es `null`, envía queries que pueden fallar o devolver errores de RLS. Además, el query a `match_status` (vista con SECURITY DEFINER) puede ser problemático.
+- **Fix:** Agregar un parámetro `ready` a `useMatches` (igual que en `useClubs`) para que solo haga fetch cuando la sesión esté confirmada.
+
+### 0.3 — Ruteo SPA en GitHub Pages (404 al recargar)
+- **Síntoma:** Recargar cualquier ruta que no sea `/` da error 404 de GitHub Pages.
+- **Causa raíz:** No existe `404.html` en la carpeta de build. GitHub Pages necesita este archivo para redirigir todas las rutas al `index.html`.
+- **Fix:** El script de build ya copia `index.html` → `404.html` (`package.json` build script). Verificar que funcione. Adicionalmente, agregar `<script>` de redirect en `public/404.html` como fallback.
+
+### 0.4 — Credenciales Hardcodeadas en `supabase.js`
+- **Síntoma:** La URL y anon key de Supabase están en el código fuente visible.
+- **Riesgo:** La anon key es pública por diseño de Supabase (protegida por RLS). Sin embargo, para producción es mejor usar env vars.
+- **Fix:** Verificar que las env vars de GitHub Actions (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) se inyecten en el build. Actualizar `supabase.js` para usar `import.meta.env` con fallback al valor hardcodeado para desarrollo local.
+
+### 0.5 — Políticas RLS Duplicadas en Supabase
+- **Síntoma:** El Advisor de Supabase muestra "Multiple Permissive Policies" en casi todas las tablas.
+- **Causa raíz:** La migración `003_rls.sql` creó políticas con subqueries. La `004_fix_rls.sql` y `V1.1_Patch.sql` recrearon las mismas políticas con `get_my_role()` pero NO eliminaron las originales de `003` que usan subqueries (ej: `"Public read countries"`, `"Public read clubs"`, `"Public read matches"`, etc.).
+- **Fix:** Ejecutar un SQL en Supabase que elimine TODAS las políticas antiguas que usan subqueries, dejando solo las que usan `get_my_role()`.
+
+---
+
+## 🏗️ Etapa 1: Navegación (Mejora Funcional)
+*   **1.1 Limpieza de Datos:** Eliminar estadísticas falsas del Dashboard (ej: "+12% vs mes anterior") y asegurar que todas las métricas deriven de data real.
+*   **1.2 Botón Global de Backup:** Un botón siempre visible (para Admin/Producers) para descargar toda la data operativa (Work Log y Minutos) en un solo Spreadsheet ordenado.
 
 ---
 
@@ -42,8 +71,7 @@ El sistema debe incentivar la venta mostrando claramente los **Minutos Disponibl
 
 ---
 
-## ⚙️ Etapa 5: Core y Saneamiento Técnico (Trabajo Invisible)
-*   **5.1 Arreglar Relaciones SQL:** Solucionar los errores `400` y `PGRST200` que bloquean Clientes, Agenda y Solicitudes ajustando los nombres de las tablas y las *Foreign Keys*.
-*   **5.2 Arreglar Auth Session Timeout:** Aumentar la velocidad de validación y eliminar la pantalla de "Cargando" infinita.
-*   **5.3 Reparar botón "Salir" (Log out).**
-*   **5.4 Soporte de Ruteo SPA:** Implementar el archivo `404.html` en public/ para que al refrescar cualquier URL en GitHub Pages (ej: `/agenda`) cargue sin arrojar error 404.
+## ⚙️ Etapa 6: UI/UX "Pro Max" y Navegación (Mejora Estética)
+*   **6.1 Rediseño Visual:** Implementar un diseño más premium, usando tarjetas limpias, animaciones suaves al cargar o interactuar, y un layout amigable (referencia: UI/UX Pro Max).
+*   **6.2 Enfoque en Minutos:** La métrica más grande y llamativa en cada tarjeta de partido debe ser los **"Minutos Libres"**.
+*   **6.3 Indicadores de Estado Visuales:** Usar colores y etiquetas claras para los estados de los partidos: Pendiente (Gris/Naranja) -> En Proceso (Azul) -> Listo (Verde con acceso inmediato al link de descarga).

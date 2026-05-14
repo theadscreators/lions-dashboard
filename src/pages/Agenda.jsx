@@ -11,7 +11,10 @@ export function Agenda({ t, paises = [] }) {
   const { user, profile, isAdmin, isProducer } = useAuth();
   
   const myClubId = profile?.club_ids?.[0] || null;
-  const { matches, loading, addMatchEvent, addMatch } = useMatches(isAdmin || isProducer ? null : myClubId);
+  const { matches, loading, addMatchEvent, addMatch } = useMatches(
+    isAdmin || isProducer ? null : myClubId,
+    !!user // ready: only fetch when authenticated
+  );
 
   const [uploadUrl, setUploadUrl] = useState("");
   const [activeUpload, setActiveUpload] = useState(null);

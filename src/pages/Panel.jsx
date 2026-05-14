@@ -20,7 +20,10 @@ import { useMatches } from "../hooks/useMatches";
 
 export function Panel({ t, auth, paises }) {
   const { role, profile, isAdmin, isProducer, isStaff } = auth;
-  const { matches, loading: matchesLoading } = useMatches(isAdmin || isProducer ? null : profile?.club_ids?.[0]);
+  const { matches, loading: matchesLoading } = useMatches(
+    isAdmin || isProducer ? null : profile?.club_ids?.[0],
+    !!auth.user
+  );
 
   // Global calculations
   const allEquipos = paises.flatMap(p => p.equipos);
