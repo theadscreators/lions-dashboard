@@ -1,43 +1,31 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 
 /**
  * Fetches all data from Supabase and transforms it into the
  * same PAISES shape that the existing components expect.
- * This way TeamCard, TeamDetail, Ligas, Clientes all work unchanged.
+ * 
+ * IMPORTANT: Only fetches when `ready` is true (i.e., user is authenticated).
+ * This prevents unauthenticated requests from hanging due to RLS policies.
  */
-export function useClubs() {
+export function useClubs(ready = false) {
   const [countries, setCountries] = useState([]);
   const [leagues, setLeagues] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchAll = async () => {
-    // Prevent multiple concurrent fetches
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
-    let timeoutId;
     try {
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error("Data fetch timed out (10s)")), 10000);
-      });
-
-      const fetchPromise = Promise.all([
+      const [countriesRes, leaguesRes, clubsRes, clientsRes] = await Promise.all([
         supabase.from("countries").select("*").order("name"),
         supabase.from("leagues").select("*"),
         supabase.from("clubs").select("*").order("name"),
         supabase.from("clients").select("*"),
       ]);
-
-      const [countriesRes, leaguesRes, clubsRes, clientsRes] = await Promise.race([
-        fetchPromise,
-        timeoutPromise
-      ]);
-      
-      clearTimeout(timeoutId);
 
       if (countriesRes.error) throw countriesRes.error;
       if (leaguesRes.error) throw leaguesRes.error;
@@ -49,25 +37,28 @@ export function useClubs() {
       setClubs(clubsRes.data || []);
       setClients(clientsRes.data || []);
     } catch (err) {
-      clearTimeout(timeoutId);
       console.error("Error fetching data from Supabase:", err);
       setError(err.message || "Error al cargar datos");
     } finally {
       setLoading(false);
     }
-  };
-
-  // We want to fetch data on mount AND whenever the auth state changes
-  // because RLS depends on the current user.
-  useEffect(() => {
-    fetchAll();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchAll();
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
+
+  // Only fetch when ready (authenticated). No onAuthStateChange listener needed
+  // because App.jsx will pass ready=true/false based on auth state.
+  useEffect(() => {
+    if (ready) {
+      fetchAll();
+    } else {
+      // Reset state when not ready (logged out)
+      setCountries([]);
+      setLeagues([]);
+      setClubs([]);
+      setClients([]);
+      setLoading(false);
+      setError(null);
+    }
+  }, [ready, fetchAll]);
 
   // Transform into the PAISES format the UI expects
   const paises = useMemo(() => {

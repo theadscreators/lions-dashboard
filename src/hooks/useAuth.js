@@ -28,41 +28,43 @@ export function useAuth() {
     return data;
   }, []);
 
-  // Initial session check and auth change listener
+  // Auth initialization
   useEffect(() => {
     let active = true;
 
-    const initialize = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!active) return;
-        
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          await fetchProfile(currentUser.id).catch(e => console.error("Profile fetch error:", e));
-        }
-      } catch (e) {
-        console.error("Init error:", e);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    initialize();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // 1. Check for existing session on page load
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      
       if (currentUser) {
-        await fetchProfile(currentUser.id).catch(e => console.error("Auth change profile fetch error:", e));
+        fetchProfile(currentUser.id)
+          .catch(e => console.error("Profile fetch error:", e))
+          .finally(() => { if (active) setLoading(false); });
       } else {
-        setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
+    }).catch(() => {
+      if (active) setLoading(false);
     });
+
+    // 2. Listen for future auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!active) return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (currentUser) {
+          await fetchProfile(currentUser.id).catch(e =>
+            console.error("Auth change profile fetch error:", e)
+          );
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
+      }
+    );
 
     return () => {
       active = false;

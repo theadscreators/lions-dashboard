@@ -127,10 +127,10 @@ export default function App() {
   const [dark, setDark] = useState(false);
   const t = dark ? T.dark : T.light;
   const auth = useAuth();
-  const { paises: supabasePaises, loading: dataLoading, error: dataError, addCountry, addClub } = useClubs();
+  const { paises: supabasePaises, loading: dataLoading, error: dataError, addCountry, addClub } = useClubs(!!auth.user);
 
   // Use Supabase data if available, otherwise fallback to local data
-  const paises = supabasePaises.length > 0 ? supabasePaises : FALLBACK_PAISES;
+  const paises = supabasePaises.length > 0 ? supabasePaises : (auth.user ? [] : FALLBACK_PAISES);
 
   useEffect(() => {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
