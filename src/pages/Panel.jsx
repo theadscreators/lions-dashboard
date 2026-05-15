@@ -88,26 +88,13 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
   return (
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.4s" }}>
       {/* Welcome */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div>
-            <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>CENTRO OPERATIVO</div>
-            <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Hola, {profile?.name?.split(' ')[0] || 'Admin'} 👋🏼</h1>
-            <p style={{ color: t.muted, fontSize: 14, marginTop: 4 }}>Aquí tienes el resumen global de Lions para hoy.</p>
-          </div>
-          <button 
-            onClick={exportGlobalBackup}
-            disabled={entriesLoading}
-            style={{ 
-              background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 16px", color: t.text, 
-              fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: FONT,
-              boxShadow: t.shadow, transition: "all 0.2s"
-            }}
-            onMouseOver={e => e.currentTarget.style.borderColor = t.accent}
-            onMouseOut={e => e.currentTarget.style.borderColor = t.border}
-          >
-            <Download size={16} color={t.accent} /> {entriesLoading ? 'Cargando...' : 'Backup Global'}
-          </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
+        <div>
+          <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>CENTRO OPERATIVO</div>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Hola, {profile?.name?.split(' ')[0] || 'Admin'} 👋🏼</h1>
+          <p style={{ color: t.muted, fontSize: 14, marginTop: 4 }}>Aquí tienes el resumen global de Lions para hoy.</p>
         </div>
+      </div>
 
       <DashboardAlerts t={t} profile={profile} matches={matches} paises={paises} />
 
@@ -205,6 +192,27 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
             )}
           </div>
         </div>
+      </div>
+
+      {/* Global Backup Section */}
+      <div style={{ marginTop: 24, background: t.card, border: `1px solid ${t.border}`, borderRadius: 20, padding: 24, boxShadow: t.shadow, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: t.text }}>RESPALDO GLOBAL DE DATOS</div>
+          <p style={{ color: t.muted, fontSize: 11, marginTop: 4, margin: 0 }}>Descarga el historial completo de tareas y minutos operativos en formato CSV.</p>
+        </div>
+        <button 
+          onClick={exportGlobalBackup}
+          disabled={entriesLoading}
+          style={{ 
+            background: t.accent, border: "none", borderRadius: 12, padding: "12px 24px", color: "#fff", 
+            fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: FONT,
+            boxShadow: `0 4px 12px ${t.accent}40`, transition: "all 0.2s"
+          }}
+          onMouseOver={e => e.currentTarget.style.opacity = 0.9}
+          onMouseOut={e => e.currentTarget.style.opacity = 1}
+        >
+          <Download size={18} /> {entriesLoading ? 'Procesando...' : 'Descargar Backup Global'}
+        </button>
       </div>
     </div>
   );

@@ -5,11 +5,41 @@ import { fmt } from "../lib/formatters";
 import { UpcomingMatches } from "../components/matches/UpcomingMatches";
 import { TeamCard } from "../components/teams/TeamCard";
 import { TeamRow } from "../components/teams/TeamRow";
+import { Download } from "lucide-react";
+import { useWorkLog } from "../hooks/useWorkLog";
 
 export function Ligas({ pais, t, auth, onSelectTeam, addClub }) {
   const [sort, setSort] = useState("default");
   const [filter, setFilter] = useState("all");
   const [layout, setLayout] = useState("grid"); // grid | list
+  const { entries, loading: entriesLoading } = useWorkLog();
+
+  const exportLigaBackup = () => {
+    // Filter entries for this league's clubs
+    const clubIds = pais.equipos.map(e => e.id);
+    const ligaEntries = entries.filter(e => clubIds.includes(e.club_id));
+
+    if (ligaEntries.length === 0) return alert("No hay datos para exportar de esta liga.");
+    
+    const headers = ["Fecha", "Club", "Tarea", "Descripción", "Monto/Min", "Estado"];
+    const rows = ligaEntries.map(e => [
+      new Date(e.created_at).toLocaleDateString(),
+      e.club?.name || "N/A",
+      e.task_type,
+      e.description,
+      e.amount || "",
+      e.status
+    ]);
+
+    const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `Lions_Backup_${pais.nombre}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const equiposActivos = pais.equipos.filter(e => e.estado === "activo");
   const sortedEquipos = useMemo(() => {
@@ -31,9 +61,20 @@ export function Ligas({ pais, t, auth, onSelectTeam, addClub }) {
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.3s" }}>
       {/* Country summary */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: t.text }}><img src={`https://flagcdn.com/w40/${pais.codigo}.png`} alt="" style={{ verticalAlign: "middle", marginRight: 8, borderRadius: 2 }} /> {pais.nombre}</div>
-          <div style={{ fontSize: 11, color: t.muted, marginTop: 2, fontWeight: 400 }}>{equiposActivos.length} equipos activos · Temporada 2026</div>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: t.text }}><img src={`https://flagcdn.com/w40/${pais.codigo}.png`} alt="" style={{ verticalAlign: "middle", marginRight: 8, borderRadius: 2 }} /> {pais.nombre}</div>
+            <div style={{ fontSize: 11, color: t.muted, marginTop: 2, fontWeight: 400 }}>{equiposActivos.length} equipos activos · Temporada 2026</div>
+          </div>
+          {(auth.isAdmin || auth.isProducer) && (
+            <button 
+              onClick={exportLigaBackup}
+              disabled={entriesLoading}
+              style={{ background: `${t.accent}15`, border: `1px solid ${t.accent}30`, borderRadius: 8, padding: "6px 12px", color: t.accent, fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: FONT }}
+            >
+              <Download size={14} /> {entriesLoading ? '...' : 'BACKUP LIGA'}
+            </button>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ textAlign: "center", background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", boxShadow: t.shadow }}>
