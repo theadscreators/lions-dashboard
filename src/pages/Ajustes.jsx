@@ -8,7 +8,7 @@ import { UsersManagement } from "../components/users/UsersManagement";
 import { PlusCircle, CheckCircle, XCircle, Clock, FileText, AlertTriangle } from "lucide-react";
 
 export function Ajustes({ t }) {
-  const { auth, profile, isAdmin, isProducer } = useAuth();
+  const { user, profile, isAdmin, isProducer } = useAuth();
   const { requests, loading, createRequest, updateRequestStatus, addComment } = useRequests();
   const { addEntry } = useWorkLog();
   const location = useLocation();

@@ -11,12 +11,14 @@ import {
   Trophy, 
   Globe,
   ChevronRight,
-  Clock
+  Clock,
+  Download
 } from "lucide-react";
 import { StackedBar } from "../components/ui/StackedBar";
 import { DashboardAlerts } from "../components/ui/DashboardAlerts";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useMatches } from "../hooks/useMatches";
+import { useWorkLog } from "../hooks/useWorkLog";
 
 export function Panel({ t, auth, paises }) {
   const { role, profile, isAdmin, isProducer, isStaff } = auth;
@@ -49,6 +51,32 @@ export function Panel({ t, auth, paises }) {
 }
 
 function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], matchesLoading = false }) {
+  const { entries, loading: entriesLoading } = useWorkLog();
+
+  const exportGlobalBackup = () => {
+    if (entries.length === 0) return alert("No hay datos para exportar.");
+    
+    const headers = ["Fecha", "Club", "Tarea", "Descripción", "Monto/Min", "Estado", "Tipo Facturación"];
+    const rows = entries.map(e => [
+      new Date(e.created_at).toLocaleDateString(),
+      e.club?.name || "Global",
+      e.task_type,
+      e.description,
+      e.amount || "",
+      e.status,
+      e.billing_type
+    ]);
+
+    const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `Lions_Global_Backup_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Top 3 Available Teams
   const topAvailable = paises
     .flatMap(p => p.equipos)
@@ -60,13 +88,28 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
   return (
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.4s" }}>
       {/* Welcome */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>CENTRO OPERATIVO</div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Hola, {profile?.name?.split(' ')[0] || 'Admin'} 👋🏼</h1>
-        <p style={{ color: t.muted, fontSize: 14, marginTop: 4 }}>Aquí tienes el resumen global de Lions para hoy.</p>
-      </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div>
+            <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>CENTRO OPERATIVO</div>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Hola, {profile?.name?.split(' ')[0] || 'Admin'} 👋🏼</h1>
+            <p style={{ color: t.muted, fontSize: 14, marginTop: 4 }}>Aquí tienes el resumen global de Lions para hoy.</p>
+          </div>
+          <button 
+            onClick={exportGlobalBackup}
+            disabled={entriesLoading}
+            style={{ 
+              background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 16px", color: t.text, 
+              fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: FONT,
+              boxShadow: t.shadow, transition: "all 0.2s"
+            }}
+            onMouseOver={e => e.currentTarget.style.borderColor = t.accent}
+            onMouseOut={e => e.currentTarget.style.borderColor = t.border}
+          >
+            <Download size={16} color={t.accent} /> {entriesLoading ? 'Cargando...' : 'Backup Global'}
+          </button>
+        </div>
 
-      <DashboardAlerts t={t} profile={profile} />
+      <DashboardAlerts t={t} profile={profile} matches={matches} paises={paises} />
 
       {/* Main KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 24 }}>
@@ -190,7 +233,7 @@ function ClubDashboard({ t, auth, paises }) {
         </div>
       </div>
 
-      <DashboardAlerts t={t} profile={auth.profile} />
+      <DashboardAlerts t={t} profile={auth.profile} paises={paises} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 20 }}>
         {/* Club status card */}

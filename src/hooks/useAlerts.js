@@ -1,19 +1,25 @@
 import { useMemo } from "react";
-import { useMatches } from "./useMatches";
-import { useRequests } from "./useRequests";
-import { useClubs } from "./useClubs";
 import { calcStats } from "../lib/calcStats";
 import { parseISO, differenceInHours } from "date-fns";
 
-export function useAlerts(profile) {
-  const { matches, loading: loadingMatches } = useMatches();
-  const { requests, loading: loadingReqs } = useRequests();
-  const { paises, loading: loadingClubs } = useClubs();
-
+/**
+ * Generates contextual alerts based on upcoming matches, requests, and club data.
+ *
+ * IMPORTANT: This hook does NOT fetch data itself. It receives pre-fetched data
+ * as parameters. The previous version called useMatches() and useClubs() internally
+ * without auth guards, which caused unauthenticated requests to Supabase that
+ * either hung forever or were blocked by RLS policies.
+ *
+ * @param {object} profile - The authenticated user's profile
+ * @param {Array} matches - Pre-fetched matches array (from useMatches)
+ * @param {Array} requests - Pre-fetched requests array (from useRequests)
+ * @param {Array} paises - Pre-fetched paises array (from useClubs)
+ */
+export function useAlerts(profile, matches = [], requests = [], paises = []) {
   const allEquipos = useMemo(() => paises.flatMap(p => p.equipos), [paises]);
 
   const alerts = useMemo(() => {
-    if (loadingMatches || loadingReqs || loadingClubs || !profile) return [];
+    if (!profile || !matches.length) return [];
 
     const newAlerts = [];
     const now = new Date();
@@ -103,7 +109,7 @@ export function useAlerts(profile) {
     }
 
     return newAlerts;
-  }, [matches, requests, allEquipos, profile, loadingMatches, loadingReqs, loadingClubs]);
+  }, [matches, requests, allEquipos, profile]);
 
-  return { alerts, loading: loadingMatches || loadingReqs || loadingClubs };
+  return { alerts };
 }

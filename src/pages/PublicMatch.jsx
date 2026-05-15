@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { FONT, T } from "../theme/theme";
 import { calcStats } from "../lib/calcStats";
 import { Calendar, MapPin, CheckCircle, Shield, PlayCircle } from "lucide-react";
+import { LionsSVG } from "../components/ui/LionsSVG";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -55,6 +56,9 @@ export function PublicMatch({ t }) {
         
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 30 }}>
+            <LionsSVG height={50} dark={true} />
+          </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255, 107, 0, 0.15)", color: "#ff6b00", padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 800, marginBottom: 20 }}>
             <CheckCircle size={14} /> REPORTE OFICIAL DE PAUTA
           </div>

@@ -4,10 +4,19 @@ import { useAlerts } from "../../hooks/useAlerts";
 import { FONT } from "../../theme/theme";
 import { AlertCircle, AlertTriangle, Info, Zap, ChevronRight } from "lucide-react";
 
-export function DashboardAlerts({ t, profile }) {
-  const { alerts, loading } = useAlerts(profile);
+/**
+ * DashboardAlerts displays contextual alerts based on match status, requests, etc.
+ * 
+ * Props:
+ * - t: theme object
+ * - profile: authenticated user profile
+ * - matches: array of matches (from useMatches)
+ * - requests: array of requests (optional, from useRequests) 
+ * - paises: array of countries/teams (from useClubs)
+ */
+export function DashboardAlerts({ t, profile, matches = [], requests = [], paises = [] }) {
+  const { alerts } = useAlerts(profile, matches, requests, paises);
 
-  if (loading) return null; // Don't show anything while loading
   if (alerts.length === 0) return null; // Don't show if no alerts
 
   const getAlertStyle = (type) => {

@@ -16,7 +16,7 @@ export function useAuth() {
       `)
       .eq("id", userId)
       .single();
-      
+
     if (!error && data) {
       const profileData = {
         ...data,
@@ -25,7 +25,7 @@ export function useAuth() {
       setProfile(profileData);
       return profileData;
     }
-    return data;
+    return null; // ← explicit null, error already logged by caller's .catch()
   }, []);
 
   // Auth initialization
@@ -46,7 +46,7 @@ export function useAuth() {
         );
 
         const result = await Promise.race([sessionPromise, timeoutPromise]);
-        
+
         if (!active) return;
 
         if (result.timedOut) {
@@ -58,9 +58,9 @@ export function useAuth() {
         const session = result.data.session;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-        
+
         if (currentUser) {
-          await fetchProfile(currentUser.id).catch(e => 
+          await fetchProfile(currentUser.id).catch(e =>
             console.error("Profile fetch error:", e)
           );
         }
@@ -109,15 +109,26 @@ export function useAuth() {
 
   // Logout
   const logout = async () => {
-    setLoading(true);
+    // Immediately clear state so the UI shows login
+    setUser(null);
+    setProfile(null);
+    setLoading(false);
+
+    // Clear Supabase session from localStorage to prevent onAuthStateChange
+    // from restoring a stale session when Supabase is unreachable (cold start).
+    // The storage key follows the pattern: sb-<project-ref>-auth-token
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        localStorage.removeItem(key);
+      }
+    });
+
     try {
       await supabase.auth.signOut();
     } catch (err) {
-      console.error("Error during logout:", err);
-    } finally {
-      setUser(null);
-      setProfile(null);
-      setLoading(false);
+      // signOut may fail if Supabase is unreachable — that's OK,
+      // we already cleared the local state above.
+      console.warn("signOut network call failed (Supabase may be unreachable):", err.message);
     }
   };
 

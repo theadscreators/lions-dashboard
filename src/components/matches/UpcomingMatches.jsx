@@ -30,7 +30,10 @@ function useNextMatches(leagueId) {
     
     const apiKey = import.meta.env.VITE_API_FOOTBALL_KEY;
     if (!apiKey) {
-      console.warn("API-Football Key no configurada.");
+      if (!window._api_football_warned) {
+        console.warn("API-Football Key no configurada.");
+        window._api_football_warned = true;
+      }
       setLoading(false);
       return;
     }

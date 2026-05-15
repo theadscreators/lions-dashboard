@@ -11,17 +11,6 @@ export function Clientes({ t, paises = [] }) {
   const [sortBy, setSortBy] = useState("total");
   const [selectedClient, setSelectedClient] = useState(null);
 
-  // Access Control: Only Admin and Producer
-  if (!isAdmin && !isProducer) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", textAlign: "center", fontFamily: FONT }}>
-        <AlertCircle size={48} color={t.muted} style={{ marginBottom: 16 }} />
-        <h2 style={{ color: t.text, margin: "0 0 8px" }}>Acceso Restringido</h2>
-        <p style={{ color: t.muted, fontSize: 14, maxWidth: 300 }}>Esta sección solo está disponible para administradores y productores de LIONS.</p>
-      </div>
-    );
-  }
-
   const investors = useMemo(() => {
     const map = {};
     const paisesToProcess = filterLiga === "global" ? paises : paises.filter(p => p.id === filterLiga);
@@ -41,6 +30,17 @@ export function Clientes({ t, paises = [] }) {
       .filter(i => i.nombre.toUpperCase() !== "LIONS")
       .sort((a, b) => sortBy === "total" ? b.total - a.total : b.equipos.length - a.equipos.length);
   }, [filterLiga, sortBy, paises]);
+
+  // Access Control: Only Admin and Producer
+  if (!isAdmin && !isProducer) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", textAlign: "center", fontFamily: FONT }}>
+        <AlertCircle size={48} color={t.muted} style={{ marginBottom: 16 }} />
+        <h2 style={{ color: t.text, margin: "0 0 8px" }}>Acceso Restringido</h2>
+        <p style={{ color: t.muted, fontSize: 14, maxWidth: 300 }}>Esta sección solo está disponible para administradores y productores de LIONS.</p>
+      </div>
+    );
+  }
 
   const top10 = investors.slice(0, 10);
 

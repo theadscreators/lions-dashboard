@@ -20,11 +20,23 @@ export function useClubs(ready = false) {
     setLoading(true);
     setError(null);
     try {
-      const [countriesRes, leaguesRes, clubsRes, clientsRes] = await Promise.all([
+      // Race the data fetch against a 10-second timeout.
+      // Prevents the "Cargando datos de Supabase..." spinner from hanging forever
+      // if Supabase is slow, RLS policies block silently, or the project is cold-starting.
+      const fetchPromise = Promise.all([
         supabase.from("countries").select("*").order("name"),
         supabase.from("leagues").select("*"),
         supabase.from("clubs").select("*").order("name"),
         supabase.from("clients").select("*"),
+      ]);
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout: Supabase no respondió en 10 segundos. Intentá recargar.")), 10000)
+      );
+
+      const [countriesRes, leaguesRes, clubsRes, clientsRes] = await Promise.race([
+        fetchPromise,
+        timeoutPromise,
       ]);
 
       if (countriesRes.error) throw countriesRes.error;

@@ -37,7 +37,7 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
       {/* Header */}
       <header style={{ background: t.header, borderBottom: `1px solid ${t.headerBorder}`, padding: "12px 20px", position: "sticky", top: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: t.shadow }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <LionsSVG height={30} dark={dark} />
+          <LionsSVG height={40} dark={dark} />
           {auth.profile && (
             <div style={{ fontSize: 10, color: t.muted, fontWeight: 700, background: t.pill, padding: "3px 8px", borderRadius: 6, letterSpacing: 0.5 }}>
               {auth.role.toUpperCase()}
@@ -69,24 +69,43 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
             <Route path="/" element={<Panel t={t} auth={auth} paises={paises} />} />
             <Route path="/ligas" element={
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-                {(auth.isAdmin || auth.isProducer) && (
-                  <div style={{ display: "flex", gap: 10, background: t.card, padding: 16, borderRadius: 12, border: `1px solid ${t.border}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>Filtrar país:</span>
+                    <select 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const sections = document.querySelectorAll('.pais-section');
+                        sections.forEach(s => {
+                          if (val === 'all' || s.id === `pais-${val}`) {
+                            s.style.display = 'block';
+                          } else {
+                            s.style.display = 'none';
+                          }
+                        });
+                      }}
+                      style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.card, color: t.text, fontFamily: FONT, fontSize: 12 }}
+                    >
+                      <option value="all">Todos los países</option>
+                      {paises.filter(p => p.activo).map(p => (
+                        <option key={p.id} value={p.codigo}>{p.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(auth.isAdmin || auth.isProducer) && (
                     <button onClick={() => {
                       const name = prompt("Nombre del país:");
                       const code = prompt("Código ISO de 2 letras (ej: py):");
                       const flag = prompt("Emoji de la bandera:");
                       if (name && code) addCountry(name, code, flag);
                     }} style={{ padding: "8px 16px", borderRadius: 8, background: t.accent, color: "#fff", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>+ Añadir País</button>
-                    
-                    <button onClick={() => {
-                      const countryCode = prompt("Código del país al que pertenece (ej: cl, py):");
-                      const name = prompt("Nombre del nuevo club:");
-                      if (countryCode && name) addClub(countryCode, name, null);
-                    }} style={{ padding: "8px 16px", borderRadius: 8, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>+ Añadir Equipo</button>
-                  </div>
-                )}
+                  )}
+                </div>
+
                 {paises.filter(p => p.activo).map(pais => (
-                  <Ligas key={pais.id} pais={pais} t={t} onSelectTeam={setSelectedTeam} />
+                  <div key={pais.id} id={`pais-${pais.codigo}`} className="pais-section">
+                    <Ligas pais={pais} t={t} auth={auth} onSelectTeam={setSelectedTeam} addClub={addClub} />
+                  </div>
                 ))}
               </div>
             } />
@@ -168,11 +187,25 @@ export default function App() {
   if (dataError && !isPublicRoute) {
     return (
       <div style={{ minHeight: "100vh", background: t.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, padding: 20 }}>
-        <div style={{ textAlign: "center", background: t.card, padding: 32, borderRadius: 20, border: `1px solid ${t.border}` }}>
+        <div style={{ textAlign: "center", background: t.card, padding: 32, borderRadius: 20, border: `1px solid ${t.border}`, maxWidth: 400 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <LionsSVG height={36} dark={dark} />
+          </div>
           <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
           <div style={{ color: t.text, fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Error de conexión</div>
-          <div style={{ color: t.muted, fontSize: 12, maxWidth: 300, marginBottom: 20 }}>No se pudo conectar con Supabase. {dataError}</div>
-          <button onClick={() => window.location.reload()} style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: t.accent, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Reintentar</button>
+          <div style={{ color: t.muted, fontSize: 12, maxWidth: 300, marginBottom: 20, lineHeight: 1.6 }}>
+            No se pudo conectar con Supabase. Esto puede pasar si el servidor está arrancando (free tier).
+            <br/><br/>
+            <span style={{ fontStyle: "italic", fontSize: 11 }}>{dataError}</span>
+          </div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <button onClick={() => window.location.reload()} style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: t.accent, color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 13 }}>
+              Reintentar
+            </button>
+            <button onClick={() => { auth.logout(); window.location.reload(); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${t.border}`, background: "transparent", color: t.muted, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -18,6 +18,7 @@ export function Agenda({ t, paises = [] }) {
 
   const [uploadUrl, setUploadUrl] = useState("");
   const [activeUpload, setActiveUpload] = useState(null);
+  const [showAddMatch, setShowAddMatch] = useState(false);
 
   if (loading) {
     return <div style={{ color: t.muted, textAlign: "center", padding: 40, fontFamily: FONT }}>Cargando agenda...</div>;
@@ -152,13 +153,9 @@ export function Agenda({ t, paises = [] }) {
       );
     }
 
-    // Remove the separate 'delivered' block since it's merged above
-
     return null;
   };
 
-  const [showAddMatch, setShowAddMatch] = useState(false);
-  
   return (
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.3s" }}>
       <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
@@ -218,97 +215,97 @@ export function Agenda({ t, paises = [] }) {
 
                   // Ultra-simplified view for Operators
                   if (profile?.role === 'operator') {
-            return (
-              <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", boxShadow: t.shadow }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1 }}>
-                  <div style={{ minWidth: 150 }}>
-                    <div style={{ fontWeight: 800, color: t.text, fontSize: 13, textTransform: "capitalize" }}>{dateStr}</div>
-                    <div style={{ color: t.muted, fontSize: 11 }}>{match.venue || "Estadio a definir"}</div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, fontWeight: 900, color: t.text }}>
-                    {homeName} <span style={{ color: t.muted, fontSize: 11 }}>VS</span> {awayName}
-                  </div>
-                </div>
-                
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: statusInfo.color }}>
-                    {statusInfo.icon} {statusInfo.label}
-                  </div>
-                  {renderActions(match)}
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, boxShadow: t.shadow }}>
-              {/* Header: Status & Round */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center", borderBottom: `1px dashed ${t.border}`, paddingBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  {match.round || "Amistoso"}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: statusInfo.color, background: `${statusInfo.color}15`, padding: "4px 10px", borderRadius: 20 }}>
-                  {statusInfo.icon} {statusInfo.label}
-                </div>
-              </div>
-
-              {/* Match Info */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
-                
-                {/* Teams */}
-                <div style={{ display: "flex", alignItems: "center", gap: 20, flex: "1 1 min-content" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: 16, fontWeight: 800, color: t.text, textAlign: "right" }}>{homeName}</span>
-                    <img src={homeLogo} alt={homeName} style={{ width: 40, height: 40, objectFit: "contain" }} />
-                  </div>
-                  
-                  <div style={{ fontSize: 12, fontWeight: 900, color: t.muted, background: t.bg, padding: "4px 8px", borderRadius: 6 }}>VS</div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                    <img src={awayLogo} alt={awayName} style={{ width: 40, height: 40, objectFit: "contain" }} />
-                    <span style={{ fontSize: 16, fontWeight: 800, color: t.text }}>{awayName}</span>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 200, borderLeft: `1px solid ${t.border}`, paddingLeft: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.text, fontSize: 13, fontWeight: 600 }}>
-                    <Calendar size={14} color={t.muted} /> <span style={{textTransform: "capitalize"}}>{dateStr}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.muted, fontSize: 12 }}>
-                    <MapPin size={14} /> {match.venue || "Estadio a definir"} {match.city ? `(${match.city})` : ''}
-                  </div>
-                </div>
-
-                {/* Sales & Notes (New V1.1) */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 180, borderLeft: `1px dashed ${t.border}`, paddingLeft: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5 }}>MINUTOS LIBRES:</span>
-                    <span style={{ fontSize: 16, fontWeight: 900, color: hasAvailable ? t.green : t.gray, background: hasAvailable ? `${t.green}15` : `${t.gray}20`, padding: "4px 8px", borderRadius: 6 }}>
-                      {stats.disponibles > 0 ? `${stats.disponibles}' DISPONIBLES` : 'SOBREVENDIDO'}
-                    </span>
-                  </div>
-                  
-                  {match.operational_notes && (
-                    <div style={{ background: `${t.amber}15`, border: `1px solid ${t.amber}40`, padding: 8, borderRadius: 8, marginTop: 4 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: t.amber, fontSize: 10, fontWeight: 800, marginBottom: 4 }}>
-                        <AlertTriangle size={12} /> NOTAS OPERATIVAS
+                    return (
+                      <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", boxShadow: t.shadow }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1 }}>
+                          <div style={{ minWidth: 150 }}>
+                            <div style={{ fontWeight: 800, color: t.text, fontSize: 13, textTransform: "capitalize" }}>{dateStr}</div>
+                            <div style={{ color: t.muted, fontSize: 11 }}>{match.venue || "Estadio a definir"}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, fontWeight: 900, color: t.text }}>
+                            {homeName} <span style={{ color: t.muted, fontSize: 11 }}>VS</span> {awayName}
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: statusInfo.color }}>
+                            {statusInfo.icon} {statusInfo.label}
+                          </div>
+                          {renderActions(match)}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11, color: t.text, fontWeight: 600, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>
-                        {match.operational_notes}
+                    );
+                  }
+
+                  return (
+                    <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, boxShadow: t.shadow }}>
+                      {/* Header: Status & Round */}
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center", borderBottom: `1px dashed ${t.border}`, paddingBottom: 12 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          {match.round || "Amistoso"}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: statusInfo.color, background: `${statusInfo.color}15`, padding: "4px 10px", borderRadius: 20 }}>
+                          {statusInfo.icon} {statusInfo.label}
+                        </div>
+                      </div>
+
+                      {/* Match Info */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
+                        
+                        {/* Teams */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 20, flex: "1 1 min-content" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, justifyContent: "flex-end" }}>
+                            <span style={{ fontSize: 16, fontWeight: 800, color: t.text, textAlign: "right" }}>{homeName}</span>
+                            <img src={homeLogo} alt={homeName} style={{ width: 40, height: 40, objectFit: "contain" }} />
+                          </div>
+                          
+                          <div style={{ fontSize: 12, fontWeight: 900, color: t.muted, background: t.bg, padding: "4px 8px", borderRadius: 6 }}>VS</div>
+                          
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                            <img src={awayLogo} alt={awayName} style={{ width: 40, height: 40, objectFit: "contain" }} />
+                            <span style={{ fontSize: 16, fontWeight: 800, color: t.text }}>{awayName}</span>
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 200, borderLeft: `1px solid ${t.border}`, paddingLeft: 20 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.text, fontSize: 13, fontWeight: 600 }}>
+                            <Calendar size={14} color={t.muted} /> <span style={{textTransform: "capitalize"}}>{dateStr}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.muted, fontSize: 12 }}>
+                            <MapPin size={14} /> {match.venue || "Estadio a definir"} {match.city ? `(${match.city})` : ''}
+                          </div>
+                        </div>
+
+                        {/* Sales & Notes (New V1.1) */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 180, borderLeft: `1px dashed ${t.border}`, paddingLeft: 20 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5 }}>MINUTOS LIBRES:</span>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: hasAvailable ? t.green : t.gray, background: hasAvailable ? `${t.green}15` : `${t.gray}20`, padding: "4px 8px", borderRadius: 6 }}>
+                              {stats.disponibles > 0 ? `${stats.disponibles}' DISPONIBLES` : 'SOBREVENDIDO'}
+                            </span>
+                          </div>
+                          
+                          {match.operational_notes && (
+                            <div style={{ background: `${t.amber}15`, border: `1px solid ${t.amber}40`, padding: 8, borderRadius: 8, marginTop: 4 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, color: t.amber, fontSize: 10, fontWeight: 800, marginBottom: 4 }}>
+                                <AlertTriangle size={12} /> NOTAS OPERATIVAS
+                              </div>
+                              <div style={{ fontSize: 11, color: t.text, fontWeight: 600, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>
+                                {match.operational_notes}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions Area */}
+                      <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${t.border}`, display: "flex", justifyContent: "flex-end" }}>
+                        {renderActions(match)}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions Area */}
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${t.border}`, display: "flex", justifyContent: "flex-end" }}>
-                {renderActions(match)}
-              </div>
-            </div>
-          );
-        })}
+                  );
+                })}
               </div>
             </div>
           );

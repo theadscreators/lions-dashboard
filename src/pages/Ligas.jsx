@@ -6,7 +6,7 @@ import { UpcomingMatches } from "../components/matches/UpcomingMatches";
 import { TeamCard } from "../components/teams/TeamCard";
 import { TeamRow } from "../components/teams/TeamRow";
 
-export function Ligas({ pais, t, onSelectTeam }) {
+export function Ligas({ pais, t, auth, onSelectTeam, addClub }) {
   const [sort, setSort] = useState("default");
   const [filter, setFilter] = useState("all");
   const [layout, setLayout] = useState("grid"); // grid | list
@@ -81,10 +81,48 @@ export function Ligas({ pais, t, onSelectTeam }) {
       {layout === "grid" ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
           {sortedEquipos.map(eq => <TeamCard key={eq.id} equipo={eq} t={t} onOpen={() => onSelectTeam(eq.id)} />)}
+          {(auth.isAdmin || auth.isProducer) && (
+            <div 
+              onClick={() => {
+                const name = prompt(`Nombre del nuevo club en ${pais.nombre}:`);
+                if (name) addClub(pais.codigo, name, null);
+              }}
+              style={{ 
+                background: `${t.lions}08`, 
+                border: `2px dashed ${t.lions}40`, 
+                borderRadius: 16, 
+                padding: 20, 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                cursor: "pointer",
+                minHeight: 140,
+                transition: "all 0.2s"
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = `${t.lions}12`; e.currentTarget.style.borderColor = t.lions; }}
+              onMouseOut={e => { e.currentTarget.style.background = `${t.lions}08`; e.currentTarget.style.borderColor = `${t.lions}40`; }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 20, background: t.lions, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, marginBottom: 12 }}>+</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: t.lions }}>Añadir Equipo</div>
+              <div style={{ fontSize: 10, color: t.muted, marginTop: 4 }}>en {pais.nombre}</div>
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {sortedEquipos.map(eq => <TeamRow key={eq.id} equipo={eq} t={t} onOpen={() => onSelectTeam(eq.id)} />)}
+          {(auth.isAdmin || auth.isProducer) && (
+            <button 
+              onClick={() => {
+                const name = prompt(`Nombre del nuevo club en ${pais.nombre}:`);
+                if (name) addClub(pais.codigo, name, null);
+              }}
+              style={{ padding: 12, borderRadius: 10, border: `1px dashed ${t.lions}`, background: "transparent", color: t.lions, fontWeight: 700, fontSize: 12, cursor: "pointer", marginTop: 8 }}
+            >
+              + Añadir Equipo en {pais.nombre}
+            </button>
+          )}
         </div>
       )}
     </div>
