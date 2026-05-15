@@ -169,27 +169,42 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
               <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
                 Cargando agenda...
               </div>
-            ) : matches.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
-                No hay partidos programados.
-              </div>
-            ) : (
-              matches.slice(0, 4).map(m => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                       <span style={{ fontSize: 10, fontWeight: 900, color: t.lions }}>{new Date(m.match_date).getDate()}</span>
-                       <span style={{ fontSize: 8, fontWeight: 700, color: t.muted }}>{new Date(m.match_date).toLocaleString('es', { month: 'short' }).toUpperCase()}</span>
+            ) : (() => {
+              const relevantMatches = matches
+                .filter(m => new Date(m.match_date) >= new Date() && !!m.home_club_id)
+                .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))
+                .slice(0, 5);
+
+              if (relevantMatches.length === 0) {
+                return (
+                  <div style={{ padding: 24, textAlign: "center", color: t.muted, fontSize: 13, border: `1px dashed ${t.border}`, borderRadius: 12 }}>
+                    No hay partidos de local próximos.
+                  </div>
+                );
+              }
+
+              return relevantMatches.map(m => {
+                const statusInfo = getStatusInfo(m, t);
+                const matchDate = new Date(m.match_date);
+                return (
+                  <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <span style={{ fontSize: 10, fontWeight: 900, color: t.lions }}>{matchDate.getDate()}</span>
+                        <span style={{ fontSize: 8, fontWeight: 700, color: t.muted }}>{matchDate.toLocaleString('es', { month: 'short' }).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{m.home_club?.name} vs {m.away_club?.name || m.away_team_name}</div>
+                        <div style={{ fontSize: 9, color: t.muted }}>{matchDate.getHours()}:{matchDate.getMinutes().toString().padStart(2, '0')}hs · {m.stadium_name || m.venue || 'Estadio a confirmar'}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{m.home_club?.name} vs {m.away_club?.name || m.away_team_name}</div>
-                      <div style={{ fontSize: 9, color: t.muted }}>{new Date(m.match_date).getHours()}:{new Date(m.match_date).getMinutes().toString().padStart(2, '0')}hs</div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: statusInfo.color, background: `${statusInfo.color}15`, padding: "2px 6px", borderRadius: 4 }}>
+                      {statusInfo.label.split(' ')[0]}
                     </div>
                   </div>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: t.accent }}>{m.current_status.toUpperCase()}</div>
-                </div>
-              ))
-            )}
+                );
+              });
+            })()}
           </div>
         </div>
       </div>
@@ -299,4 +314,18 @@ function ClubDashboard({ t, auth, paises }) {
 
 function occupancyPercent(total) {
   return Math.round((total / 90) * 100);
+}
+
+function getStatusInfo(match, t) {
+  const { current_status, operational_notes, playlist_url } = match;
+  
+  if (playlist_url || current_status === 'delivered' || current_status === 'approved' || current_status === 'playlist_ready') {
+    return { label: "LISTO", color: t.green };
+  }
+
+  if (operational_notes || current_status === 'club_confirmed' || current_status === 'producer_confirmed' || current_status === 'all_confirmed') {
+    return { label: "CHEQUEO", color: t.amber };
+  }
+
+  return { label: "PENDIENTE", color: t.lions };
 }

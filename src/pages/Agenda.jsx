@@ -19,6 +19,7 @@ export function Agenda({ t, paises = [] }) {
   const [uploadUrl, setUploadUrl] = useState("");
   const [activeUpload, setActiveUpload] = useState(null);
   const [showAddMatch, setShowAddMatch] = useState(false);
+  const [homeOnly, setHomeOnly] = useState(true);
 
   if (loading) {
     return <div style={{ color: t.muted, textAlign: "center", padding: 40, fontFamily: FONT }}>Cargando agenda...</div>;
@@ -32,17 +33,18 @@ export function Agenda({ t, paises = [] }) {
     }
   };
 
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case 'scheduled': return { label: "Programado", color: t.muted, icon: <Calendar size={14} /> };
-      case 'club_confirmed': return { label: "Confirmado (Club)", color: t.club, icon: <Clock size={14} /> };
-      case 'producer_confirmed': return { label: "Confirmado (Productor)", color: t.lions, icon: <Clock size={14} /> };
-      case 'all_confirmed': return { label: "Esperando Playlist", color: t.amber, icon: <AlertCircle size={14} /> };
-      case 'playlist_ready': return { label: "Playlist Lista para Revisión", color: t.accent, icon: <CheckCircle size={14} /> };
-      case 'approved': return { label: "Aprobada por todos", color: t.green, icon: <CheckCircle size={14} /> };
-      case 'delivered': return { label: "Entregada ✅", color: t.green, icon: <CheckCircle size={14} /> };
-      default: return { label: status, color: t.muted, icon: <Calendar size={14} /> };
+  const getStatusInfo = (match) => {
+    const { current_status, operational_notes, playlist_url } = match;
+    
+    if (playlist_url || current_status === 'delivered' || current_status === 'approved' || current_status === 'playlist_ready') {
+      return { label: "LISTO (MATERIAL Y PLAYLIST)", color: t.green, icon: <CheckCircle size={14} /> };
     }
+
+    if (operational_notes || current_status === 'club_confirmed' || current_status === 'producer_confirmed' || current_status === 'all_confirmed') {
+      return { label: "CHEQUEO REQUERIDO", color: t.amber, icon: <AlertTriangle size={14} /> };
+    }
+
+    return { label: "MINUTAJE A CONFIRMAR", color: t.lions, icon: <Clock size={14} /> };
   };
 
   const renderActions = (match) => {
@@ -164,9 +166,24 @@ export function Agenda({ t, paises = [] }) {
           <p style={{ color: t.muted, fontSize: 13, margin: 0 }}>Gestioná la confirmación de partidos y la entrega de material por fecha.</p>
         </div>
         {(isAdmin || isProducer) && (
-          <button onClick={() => setShowAddMatch(true)} style={{ padding: "10px 16px", borderRadius: 10, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12 }}>
-            + Añadir Partido Manual
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button 
+              onClick={() => setHomeOnly(!homeOnly)} 
+              style={{ 
+                padding: "10px 16px", borderRadius: 10, 
+                background: homeOnly ? `${t.accent}15` : t.card, 
+                color: homeOnly ? t.accent : t.muted, 
+                border: `1px solid ${homeOnly ? t.accent : t.border}`, 
+                cursor: "pointer", fontWeight: 800, fontSize: 12,
+                display: "flex", alignItems: "center", gap: 8
+              }}
+            >
+              <CheckCircle size={14} /> {homeOnly ? "SOLO LOCAL" : "TODOS"}
+            </button>
+            <button onClick={() => setShowAddMatch(true)} style={{ padding: "10px 16px", borderRadius: 10, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12 }}>
+              + Añadir Partido Manual
+            </button>
+          </div>
         )}
       </div>
 
@@ -181,7 +198,7 @@ export function Agenda({ t, paises = [] }) {
         {matches.length === 0 && <div style={{ color: t.muted, padding: 20 }}>No hay partidos programados.</div>}
         
         {['Hoy y Mañana', 'Próximos 7 Días', 'Futuros'].map(groupName => {
-          const groupMatches = matches.filter(match => {
+          let groupMatches = matches.filter(match => {
             const matchDate = new Date(match.match_date);
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -193,6 +210,15 @@ export function Agenda({ t, paises = [] }) {
             if (groupName === 'Próximos 7 Días') return diffDays > 1 && diffDays <= 7;
             return diffDays > 7;
           });
+
+          // Home Only Filter Logic
+          if (homeOnly) {
+            groupMatches = groupMatches.filter(m => {
+              // Si es admin/producer, solo muestra donde el local sea uno de nuestros clubes
+              // En este caso, home_club_id debe estar presente.
+              return !!m.home_club_id;
+            });
+          }
 
           if (groupMatches.length === 0) return null;
 
@@ -206,7 +232,7 @@ export function Agenda({ t, paises = [] }) {
                   const awayName = match.away_club?.name || match.away_team_name || "Visitante";
                   const awayLogo = match.away_club?.logo_url || match.away_team_logo || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
                   
-                  const statusInfo = getStatusInfo(match.current_status);
+                  const statusInfo = getStatusInfo(match);
                   const dateStr = format(new Date(match.match_date), "EEEE d 'de' MMMM, HH:mm'hs'", { locale: es });
 
                   const clients = match.home_club?.clients || [];
@@ -220,7 +246,7 @@ export function Agenda({ t, paises = [] }) {
                         <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1 }}>
                           <div style={{ minWidth: 150 }}>
                             <div style={{ fontWeight: 800, color: t.text, fontSize: 13, textTransform: "capitalize" }}>{dateStr}</div>
-                            <div style={{ color: t.muted, fontSize: 11 }}>{match.venue || "Estadio a definir"}</div>
+                            <div style={{ color: t.muted, fontSize: 11 }}>{match.stadium_name || match.venue || "Estadio a definir"}</div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, fontWeight: 900, color: t.text }}>
                             {homeName} <span style={{ color: t.muted, fontSize: 11 }}>VS</span> {awayName}
@@ -273,7 +299,7 @@ export function Agenda({ t, paises = [] }) {
                             <Calendar size={14} color={t.muted} /> <span style={{textTransform: "capitalize"}}>{dateStr}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.muted, fontSize: 12 }}>
-                            <MapPin size={14} /> {match.venue || "Estadio a definir"} {match.city ? `(${match.city})` : ''}
+                            <MapPin size={14} /> {match.stadium_name || match.venue || "Estadio a definir"} {match.city ? `(${match.city})` : ''}
                           </div>
                         </div>
 

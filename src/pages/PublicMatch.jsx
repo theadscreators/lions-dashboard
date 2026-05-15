@@ -116,6 +116,34 @@ export function PublicMatch({ t }) {
               <div style={{ fontSize: 32, fontWeight: 900, color: "#00e676" }}>{stats.totalReal}'</div>
             </div>
           </div>
+
+          {match.playlist_url && (
+            <div style={{ marginTop: 32, paddingTop: 32, borderTop: "2px dashed #222" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#999", letterSpacing: 1.5, marginBottom: 16, textAlign: "center" }}>ACCESO A MATERIAL</div>
+              <a 
+                href={match.playlist_url} 
+                target="_blank" 
+                rel="noreferrer" 
+                style={{ 
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 12, 
+                  background: "#ff6b00", color: "#fff", textDecoration: "none", 
+                  padding: "16px", borderRadius: 16, fontSize: 16, fontWeight: 900,
+                  boxShadow: "0 10px 20px rgba(255, 107, 0, 0.3)", transition: "transform 0.2s"
+                }}
+                onMouseOver={e => e.currentTarget.style.transform = "scale(1.02)"}
+                onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                📥 DESCARGAR MATERIAL (PLAYLIST)
+              </a>
+            </div>
+          )}
+
+          {match.operational_notes && (
+            <div style={{ marginTop: 24, padding: "16px 20px", background: "rgba(255, 193, 7, 0.05)", border: "1px solid rgba(255, 193, 7, 0.2)", borderRadius: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#ffc107", letterSpacing: 1, marginBottom: 8 }}>NOTAS OPERATIVAS</div>
+              <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{match.operational_notes}</div>
+            </div>
+          )}
         </div>
 
         <div style={{ textAlign: "center", marginTop: 40, color: "#666", fontSize: 11, fontWeight: 600 }}>

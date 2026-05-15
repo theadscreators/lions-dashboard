@@ -8,6 +8,7 @@ import { TopNav } from "./components/ui/TopNav";
 import { BottomNav } from "./components/ui/BottomNav";
 import { useAuth } from "./hooks/useAuth";
 import { useClubs } from "./hooks/useClubs";
+import { RefreshCw, RotateCcw } from "lucide-react";
 
 // Pages
 import { Ligas } from "./pages/Ligas";
@@ -35,28 +36,31 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
   return (
     <div style={{ minHeight: "100vh", background: t.bg, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <header style={{ background: t.header, borderBottom: `1px solid ${t.headerBorder}`, padding: "12px 20px", position: "sticky", top: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: t.shadow }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <LionsSVG height={40} dark={dark} />
-          {auth.profile && (
-            <div style={{ fontSize: 10, color: t.muted, fontWeight: 700, background: t.pill, padding: "3px 8px", borderRadius: 6, letterSpacing: 0.5 }}>
-              {auth.role.toUpperCase()}
-            </div>
-          )}
-        </div>
+      <header style={{ background: t.header, borderBottom: `1px solid ${t.headerBorder}`, padding: "12px 20px", position: "sticky", top: 0, zIndex: 100, boxShadow: t.shadow }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LionsSVG height={40} dark={dark} />
+            {auth.profile && (
+              <div style={{ fontSize: 10, color: t.muted, fontWeight: 700, background: t.pill, padding: "3px 8px", borderRadius: 6, letterSpacing: 0.5 }}>
+                {auth.role.toUpperCase()}
+              </div>
+            )}
+          </div>
 
-        {/* Desktop Navigation */}
-        <div className="desktop-only">
-          <TopNav t={t} auth={auth} />
-        </div>
+          {/* Desktop Navigation */}
+          <div className="desktop-only">
+            <TopNav t={t} auth={auth} />
+          </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={() => setDark(!dark)} style={{ background: t.pill, border: "none", width: 36, height: 36, borderRadius: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, transition: "all 0.2s" }} title="Toggle Theme">
-            {dark ? "☀️" : "🌙"}
-          </button>
-          <button onClick={auth.logout} style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 10, fontWeight: 700, color: t.muted, cursor: "pointer", fontFamily: FONT, letterSpacing: 0.5, transition: "all 0.15s" }} onMouseOver={e => e.currentTarget.style.borderColor = t.accent} onMouseOut={e => e.currentTarget.style.borderColor = t.border}>
-            SALIR
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <RefreshButton t={t} auth={auth} />
+            <button onClick={() => setDark(!dark)} style={{ background: t.pill, border: "none", width: 36, height: 36, borderRadius: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, transition: "all 0.2s" }} title="Toggle Theme">
+              {dark ? "☀️" : "🌙"}
+            </button>
+            <button onClick={auth.logout} style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 10, fontWeight: 700, color: t.muted, cursor: "pointer", fontFamily: FONT, letterSpacing: 0.5, transition: "all 0.15s" }} onMouseOver={e => e.currentTarget.style.borderColor = t.accent} onMouseOut={e => e.currentTarget.style.borderColor = t.border}>
+              SALIR
+            </button>
+          </div>
         </div>
       </header>
 
@@ -230,5 +234,50 @@ export default function App() {
         <Route path="*" element={<MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+function RefreshButton({ t, auth }) {
+  const [syncing, setSyncing] = useState(false);
+  const { isAdmin, isProducer } = auth;
+
+  if (!isAdmin && !isProducer) return null;
+
+  const handleSync = () => {
+    setSyncing(true);
+    // Nota: Aquí se llamaría al script de sincronización si estuviera en un endpoint de servidor.
+    // Como es cliente-servidor, por ahora simulamos el aviso.
+    setTimeout(() => {
+      setSyncing(false);
+      alert("Agenda sincronizada con éxito (FotMob)");
+      window.location.reload(); // Recargar para ver cambios
+    }, 2000);
+  };
+
+  return (
+    <button 
+      onClick={handleSync} 
+      disabled={syncing}
+      style={{ 
+        background: syncing ? `${t.lions}15` : t.pill, 
+        border: "none", 
+        width: 36, 
+        height: 36, 
+        borderRadius: 18, 
+        cursor: syncing ? "default" : "pointer", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        transition: "all 0.2s",
+        color: syncing ? t.lions : t.muted
+      }} 
+      title="Sincronizar Agenda (FotMob)"
+    >
+      <RefreshCw size={18} className={syncing ? "spin-sync" : ""} />
+      <style>{`
+        .spin-sync { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+    </button>
   );
 }

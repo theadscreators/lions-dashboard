@@ -3,6 +3,7 @@ import { getStatus, calcStats, statusColor, statusLabel } from "../../lib/calcSt
 import { fmt } from "../../lib/formatters";
 import { AnimatedBar } from "../ui/AnimatedBar";
 import { FONT } from "../../theme/theme";
+import { useMatches } from "../../hooks/useMatches";
 
 export function TeamDetail({ equipo, t, onBack }) {
   const [tab, setTab] = useState("LIONS");
@@ -91,7 +92,64 @@ export function TeamDetail({ equipo, t, onBack }) {
       </div>
 
       {equipo.notas && <div style={{ marginTop: 14, background: `${t.accent}0c`, border: `1px solid ${t.accent}30`, borderRadius: 10, padding: "10px 13px", fontSize: 12, color: t.sub, fontWeight: 600, lineHeight: 1.7 }}>✅ {equipo.notas}</div>}
+
+      {/* Próximos Partidos */}
+      <NextMatches clubId={equipo.id} t={t} />
+
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    </div>
+  );
+}
+
+function NextMatches({ clubId, t }) {
+  const { matches, loading } = useMatches(clubId);
+  const nextThree = matches
+    .filter(m => new Date(m.match_date) > new Date())
+    .slice(0, 3);
+
+  if (loading) return <div style={{ marginTop: 24, fontSize: 10, color: t.muted, textAlign: "center", fontWeight: 800 }}>CARGANDO AGENDA...</div>;
+  if (nextThree.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <div style={{ fontSize: 10, color: t.muted, fontWeight: 800, letterSpacing: 1.5, marginBottom: 12, borderBottom: `1px solid ${t.border}`, paddingBottom: 6 }}>
+        PRÓXIMOS PARTIDOS
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {nextThree.map((m, i) => {
+          const isHome = m.home_club_id === clubId;
+          const date = new Date(m.match_date);
+          return (
+            <div key={i} style={{ 
+              background: t.card, 
+              border: `1px solid ${t.border}`, 
+              borderRadius: 12, 
+              padding: "12px 14px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              boxShadow: t.shadow
+            }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: t.text }}>
+                  {isHome ? "vs " : "en "} {isHome ? (m.away_club?.name || m.away_team_name) : m.home_club?.name}
+                </div>
+                <div style={{ fontSize: 9, color: t.muted, fontWeight: 700, marginTop: 2 }}>
+                  {m.stadium_name || m.venue || "Estadio por confirmar"} • {m.round || "Fecha por confirmar"}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 12, fontWeight: 900, color: isHome ? t.accent : t.muted }}>
+                  {date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).toUpperCase()}
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: t.muted }}>
+                  {date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} HS
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
