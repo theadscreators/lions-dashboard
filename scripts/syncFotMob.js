@@ -48,9 +48,14 @@ async function syncFotMob() {
 
   const clubByFotMobId = {};
   const clubByName = {};
+  const clubBySlug = {};
+
+  const slugify = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+
   clubs.forEach(c => {
     if (c.fotmob_id) clubByFotMobId[c.fotmob_id] = c;
     clubByName[c.name.toLowerCase()] = c;
+    clubBySlug[slugify(c.name)] = c;
   });
 
   for (const league of leagues) {
@@ -104,7 +109,7 @@ async function syncFotMob() {
           const awayName = match.away.name;
         
         // Vincular club local
-        let homeClub = clubByFotMobId[homeId] || clubByName[homeName.toLowerCase()];
+        let homeClub = clubByFotMobId[homeId] || clubByName[homeName.toLowerCase()] || clubBySlug[slugify(homeName)];
         
         if (homeClub && !homeClub.fotmob_id) {
           await supabase.from("clubs").update({ fotmob_id: homeId }).eq("id", homeClub.id);
@@ -113,7 +118,7 @@ async function syncFotMob() {
         }
 
         // Vincular club visitante (si existe en nuestra DB)
-        let awayClub = clubByFotMobId[awayId] || clubByName[awayName.toLowerCase()];
+        let awayClub = clubByFotMobId[awayId] || clubByName[awayName.toLowerCase()] || clubBySlug[slugify(awayName)];
         if (awayClub && !awayClub.fotmob_id) {
             await supabase.from("clubs").update({ fotmob_id: awayId }).eq("id", awayClub.id);
             awayClub.fotmob_id = awayId;

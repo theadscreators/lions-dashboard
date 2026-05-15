@@ -36,8 +36,8 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
   return (
     <div style={{ minHeight: "100vh", background: t.bg, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <header style={{ background: t.header, borderBottom: `1px solid ${t.headerBorder}`, padding: "12px 20px", position: "sticky", top: 0, zIndex: 100, boxShadow: t.shadow }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <header style={{ background: t.header, borderBottom: `1px solid ${t.headerBorder}`, padding: "0", position: "sticky", top: 0, zIndex: 100, boxShadow: t.shadow }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxSizing: "border-box" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <LionsSVG height={40} dark={dark} />
             {auth.profile && (
