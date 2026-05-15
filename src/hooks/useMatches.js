@@ -15,7 +15,14 @@ export function useMatches(clubId = null, ready = true) {
     setLoading(true);
     setError(null);
     try {
-      // Fetch matches with home and away club details
+      // Define a window of time for the agenda (e.g., -7 days to +30 days)
+      const now = new Date();
+      const pastLimit = new Date(now);
+      pastLimit.setDate(now.getDate() - 7);
+      const futureLimit = new Date(now);
+      futureLimit.setDate(now.getDate() + 30);
+
+      // Fetch matches within the time window
       let query = supabase
         .from("matches")
         .select(`
@@ -23,7 +30,10 @@ export function useMatches(clubId = null, ready = true) {
           home_club:clubs!home_club_id(id, name, logo_url, clients(*)),
           away_club:clubs!away_club_id(id, name, logo_url)
         `)
-        .order("match_date", { ascending: true });
+        .gte("match_date", pastLimit.toISOString())
+        .lte("match_date", futureLimit.toISOString())
+        .order("match_date", { ascending: true })
+        .limit(100);
 
       if (clubId) {
         query = query.or(`home_club_id.eq.${clubId},away_club_id.eq.${clubId}`);
