@@ -46,32 +46,38 @@ export function Agenda({ t, paises = [] }) {
 
   const fmtArgTime = (dateStr) => {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }) + "hs ARG";
+    // Format to "09:00 pm ARG"
+    return d.toLocaleTimeString('en-US', { 
+      timeZone: 'America/Argentina/Buenos_Aires', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    }).toLowerCase().replace(' am', 'am').replace(' pm', 'pm') + " ARG";
   };
 
   const renderActions = (match) => {
     const { current_status, id, events } = match;
     const isProdOrAdmin = isAdmin || isProducer;
-    const isClub = profile?.role === 'club_staff';
 
     const btnStyle = (bg, color) => ({
       padding: "6px 12px", borderRadius: 8, border: "none", background: bg, color, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: FONT
     });
 
-    if (['scheduled', 'club_confirmed', 'producer_confirmed'].includes(current_status)) {
-      const hasProdConfirmed = events.some(e => e.event_type === 'producer_confirmed');
-      if (isProdOrAdmin && !hasProdConfirmed) {
-        return <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>Confirmar (Productor)</button>;
-      }
-      return <span style={{ fontSize: 10, color: t.muted, fontWeight: 600 }}>Esperando pauta...</span>;
+    const hasProdConfirmed = events.some(e => e.event_type === 'producer_confirmed');
+
+    // Admin/Producer can confirm
+    if (!hasProdConfirmed && isProdOrAdmin) {
+      return <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>Confirmar (Productor)</button>;
     }
 
-    if (current_status === 'all_confirmed' && isAdmin) {
+    // After producer confirms (even if club hasn't), allow Admin to upload material
+    if (hasProdConfirmed && isAdmin && !match.playlist_url) {
       if (activeUpload === id) {
         return (
           <div style={{ display: "flex", gap: 6 }}>
             <input type="text" placeholder="Link Dropbox..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }} />
             <button onClick={() => handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl })} style={btnStyle(t.accent, "#fff")}>Ok</button>
+            <button onClick={() => setActiveUpload(null)} style={btnStyle(t.bg, t.text)}>x</button>
           </div>
         );
       }
@@ -159,7 +165,7 @@ export function Agenda({ t, paises = [] }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {mlist.map(m => {
                   const status = getStatusInfo(m);
-                  const flag = m.home_club?.leagues?.countries?.flag_emoji || "⚽";
+                  const flag = m.country_flag || "⚽";
                   const stats = calcStats(m.home_club?.clients || []);
                   
                   return (

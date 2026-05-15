@@ -186,8 +186,13 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
               return relevantMatches.map(m => {
                 const statusInfo = getStatusInfo(m, t);
                 const matchDate = new Date(m.match_date);
-                const flag = m.home_club?.leagues?.countries?.flag_emoji || "⚽";
-                const argTime = matchDate.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }) + " ARG";
+                const flag = m.country_flag || "⚽";
+                const argTime = matchDate.toLocaleTimeString('en-US', { 
+                  timeZone: 'America/Argentina/Buenos_Aires', 
+                  hour: '2-digit', 
+                  minute: '2-digit', 
+                  hour12: true 
+                }).toLowerCase().replace(' am', 'am').replace(' pm', 'pm') + " ARG";
 
                 return (
                   <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>

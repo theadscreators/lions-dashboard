@@ -66,13 +66,36 @@ export function useMatches(clubId = null, ready = true) {
 
       // Merge data
       const merged = matchesData.map(m => {
-        const statusRecord = statusData.find(s => s.match_id === m.id);
         const matchEvents = eventsData.filter(e => e.match_id === m.id);
+        
+        // Robust status calculation in JS as fallback/override for the view
+        let status = "scheduled";
+        const hasDelivered = matchEvents.some(e => e.event_type === 'delivered');
+        const hasApproved = matchEvents.some(e => e.event_type === 'producer_approved') && 
+                            matchEvents.some(e => e.event_type === 'club_approved');
+        const hasPlaylist = matchEvents.some(e => e.event_type === 'playlist_uploaded');
+        const hasProdConfirmed = matchEvents.some(e => e.event_type === 'producer_confirmed');
+        const hasClubConfirmed = matchEvents.some(e => e.event_type === 'club_confirmed');
+
+        if (hasDelivered) status = 'delivered';
+        else if (hasApproved) status = 'approved';
+        else if (hasPlaylist) status = 'playlist_ready';
+        else if (hasProdConfirmed && hasClubConfirmed) status = 'all_confirmed';
+        else if (hasProdConfirmed) status = 'producer_confirmed';
+        else if (hasClubConfirmed) status = 'club_confirmed';
+
+        // Fix flag access: handle cases where Supabase might return arrays for N-1 relationships
+        const league = Array.isArray(m.home_club?.leagues) ? m.home_club.leagues[0] : m.home_club?.leagues;
+        const country = Array.isArray(league?.countries) ? league.countries[0] : league?.countries;
+        
         return {
           ...m,
-          current_status: statusRecord?.status || "scheduled",
-          playlist_url: statusRecord?.playlist_url || null,
-          events: matchEvents
+          current_status: status,
+          playlist_url: matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
+          events: matchEvents,
+          // Flattened flag for easier access
+          country_flag: country?.flag_emoji || "⚽",
+          country_code: country?.code || ""
         };
       });
 
