@@ -186,6 +186,9 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
               return relevantMatches.map(m => {
                 const statusInfo = getStatusInfo(m, t);
                 const matchDate = new Date(m.match_date);
+                const flag = m.home_club?.leagues?.countries?.flag_emoji || "⚽";
+                const argTime = matchDate.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }) + " ARG";
+
                 return (
                   <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -194,12 +197,18 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
                         <span style={{ fontSize: 8, fontWeight: 700, color: t.muted }}>{matchDate.toLocaleString('es', { month: 'short' }).toUpperCase()}</span>
                       </div>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{m.home_club?.name} vs {m.away_club?.name || m.away_team_name}</div>
-                        <div style={{ fontSize: 9, color: t.muted }}>{matchDate.getHours()}:{matchDate.getMinutes().toString().padStart(2, '0')}hs · {m.stadium_name || m.venue || 'Estadio a confirmar'}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>
+                          <span style={{ marginRight: 6 }}>{flag}</span>
+                          {m.home_club?.name} vs {m.away_club?.name || m.away_team_name}
+                        </div>
+                        <div style={{ fontSize: 9, color: t.muted }}>
+                          {matchDate.getHours()}:{matchDate.getMinutes().toString().padStart(2, '0')}hs 
+                          <span style={{ color: t.accent, fontWeight: 700, marginLeft: 6 }}>({argTime})</span>
+                        </div>
                       </div>
                     </div>
                     <div style={{ fontSize: 9, fontWeight: 800, color: statusInfo.color, background: `${statusInfo.color}15`, padding: "2px 6px", borderRadius: 4 }}>
-                      {statusInfo.label.split(' ')[0]}
+                      {statusInfo.label}
                     </div>
                   </div>
                 );

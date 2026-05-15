@@ -27,7 +27,11 @@ export function useMatches(clubId = null, ready = true) {
         .from("matches")
         .select(`
           *,
-          home_club:clubs!home_club_id(id, name, logo_url, clients(*)),
+          home_club:clubs!home_club_id(
+            id, name, logo_url, 
+            clients(*),
+            leagues(id, name, countries(id, name, flag_emoji, code))
+          ),
           away_club:clubs!away_club_id(id, name, logo_url)
         `)
         .gte("match_date", pastLimit.toISOString())

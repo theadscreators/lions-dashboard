@@ -9,17 +9,17 @@ import { es } from "date-fns/locale";
 
 export function Agenda({ t, paises = [] }) {
   const { user, profile, isAdmin, isProducer } = useAuth();
-  
-  const myClubId = profile?.club_ids?.[0] || null;
-  const { matches, loading, addMatchEvent, addMatch } = useMatches(
-    isAdmin || isProducer ? null : myClubId,
-    !!user // ready: only fetch when authenticated
-  );
-
+  const [selectedCountry, setSelectedCountry] = useState("all");
   const [uploadUrl, setUploadUrl] = useState("");
   const [activeUpload, setActiveUpload] = useState(null);
   const [showAddMatch, setShowAddMatch] = useState(false);
   const [homeOnly, setHomeOnly] = useState(true);
+  
+  const myClubId = profile?.club_ids?.[0] || null;
+  const { matches, loading, addMatchEvent, addMatch } = useMatches(
+    isAdmin || isProducer ? null : myClubId,
+    !!user
+  );
 
   if (loading) {
     return <div style={{ color: t.muted, textAlign: "center", padding: 40, fontFamily: FONT }}>Cargando agenda...</div>;
@@ -35,156 +35,107 @@ export function Agenda({ t, paises = [] }) {
 
   const getStatusInfo = (match) => {
     const { current_status, operational_notes, playlist_url } = match;
-    
-    if (playlist_url || current_status === 'delivered' || current_status === 'approved' || current_status === 'playlist_ready') {
-      return { label: "LISTO (MATERIAL Y PLAYLIST)", color: t.green, icon: <CheckCircle size={14} /> };
+    if (playlist_url || ['delivered', 'approved', 'playlist_ready'].includes(current_status)) {
+      return { label: "LISTO", color: t.green, icon: <CheckCircle size={14} /> };
     }
-
-    if (operational_notes || current_status === 'club_confirmed' || current_status === 'producer_confirmed' || current_status === 'all_confirmed') {
-      return { label: "CHEQUEO REQUERIDO", color: t.amber, icon: <AlertTriangle size={14} /> };
+    if (operational_notes || ['club_confirmed', 'producer_confirmed', 'all_confirmed'].includes(current_status)) {
+      return { label: "CHEQUEO", color: t.amber, icon: <AlertTriangle size={14} /> };
     }
+    return { label: "PENDIENTE", color: t.lions, icon: <Clock size={14} /> };
+  };
 
-    return { label: "MINUTAJE A CONFIRMAR", color: t.lions, icon: <Clock size={14} /> };
+  const fmtArgTime = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }) + "hs ARG";
   };
 
   const renderActions = (match) => {
     const { current_status, id, events } = match;
-    const isClub = profile?.role === 'club_staff';
     const isProdOrAdmin = isAdmin || isProducer;
-    const isOperator = profile?.role === 'operator';
+    const isClub = profile?.role === 'club_staff';
 
-    // Helper button styles
     const btnStyle = (bg, color) => ({
-      padding: "8px 16px", borderRadius: 8, border: "none", background: bg, color, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: FONT
+      padding: "6px 12px", borderRadius: 8, border: "none", background: bg, color, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: FONT
     });
 
-    const hasClubConfirmed = events.some(e => e.event_type === 'club_confirmed');
-    const hasProdConfirmed = events.some(e => e.event_type === 'producer_confirmed');
-    const hasClubApproved = events.some(e => e.event_type === 'club_approved');
-    const hasProdApproved = events.some(e => e.event_type === 'producer_approved');
-
-    if (current_status === 'scheduled' || current_status === 'club_confirmed' || current_status === 'producer_confirmed') {
-      return (
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {isClub && !hasClubConfirmed && (
-            <button onClick={() => handleEvent(id, 'club_confirmed')} style={btnStyle(t.accent, "#fff")}>
-              <CheckCircle size={14} /> Confirmar Partido
-            </button>
-          )}
-          {isProdOrAdmin && !hasProdConfirmed && (
-            <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>
-              <CheckCircle size={14} /> Confirmar (Productor)
-            </button>
-          )}
-          {(hasClubConfirmed || hasProdConfirmed) && current_status !== 'all_confirmed' && (
-            <span style={{ fontSize: 11, color: t.muted }}>Esperando a la otra parte...</span>
-          )}
-        </div>
-      );
+    if (['scheduled', 'club_confirmed', 'producer_confirmed'].includes(current_status)) {
+      const hasProdConfirmed = events.some(e => e.event_type === 'producer_confirmed');
+      if (isProdOrAdmin && !hasProdConfirmed) {
+        return <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>Confirmar (Productor)</button>;
+      }
+      return <span style={{ fontSize: 10, color: t.muted, fontWeight: 600 }}>Esperando pauta...</span>;
     }
 
     if (current_status === 'all_confirmed' && isAdmin) {
       if (activeUpload === id) {
         return (
-          <div style={{ display: "flex", gap: 8, width: "100%" }}>
-            <input 
-              type="text" placeholder="Link de Dropbox/Drive..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)}
-              style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontFamily: FONT, fontSize: 12 }}
-            />
-            <button onClick={() => handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl })} style={btnStyle(t.accent, "#fff")}>Guardar</button>
-            <button onClick={() => setActiveUpload(null)} style={btnStyle(t.bg, t.text)}>Cancelar</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="text" placeholder="Link Dropbox..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }} />
+            <button onClick={() => handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl })} style={btnStyle(t.accent, "#fff")}>Ok</button>
           </div>
         );
       }
-      return (
-        <button onClick={() => setActiveUpload(id)} style={btnStyle(`${t.lions}15`, t.lions)}>
-          <UploadCloud size={14} /> Subir Playlist
-        </button>
-      );
-    }
-
-    if (current_status === 'playlist_ready') {
-      return (
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <a href={match.playlist_url} target="_blank" rel="noreferrer" style={{ ...btnStyle(t.bg, t.text), border: `1px solid ${t.border}`, textDecoration: "none" }}>
-            <Download size={14} /> Ver Archivo
-          </a>
-          {isClub && !hasClubApproved && (
-            <button onClick={() => handleEvent(id, 'club_approved')} style={btnStyle(t.green, "#fff")}>
-              <CheckCircle size={14} /> Aprobar Playlist
-            </button>
-          )}
-          {isAdmin && !hasProdApproved && (
-            <button onClick={() => handleEvent(id, 'producer_approved')} style={btnStyle(t.green, "#fff")}>
-              <CheckCircle size={14} /> Aprobar (Lions Admin)
-            </button>
-          )}
-          {(hasClubApproved || hasProdApproved) && (
-            <span style={{ fontSize: 11, color: t.muted }}>Falta aprobación de {hasClubApproved ? 'Admin Lions' : 'Club'}</span>
-          )}
-        </div>
-      );
-    }
-
-    if (current_status === 'approved' || current_status === 'delivered') {
-      const publicLink = `${window.location.origin}${import.meta.env.BASE_URL}public/${id}`;
-      return (
-        <div style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {/* Link Público Generado */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: `${t.lions}15`, padding: "6px 12px", borderRadius: 8, border: `1px solid ${t.lions}40` }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: t.lions }}>LINK PÚBLICO:</span>
-            <input type="text" readOnly value={publicLink} style={{ fontSize: 11, padding: 4, background: "transparent", border: "none", color: t.text, width: 180 }} onClick={e => e.target.select()} />
-            <button onClick={() => { navigator.clipboard.writeText(publicLink); alert("Link copiado!"); }} style={{ ...btnStyle(t.lions, "#fff"), padding: "4px 8px" }}>Copiar</button>
-          </div>
-
-          <a href={match.playlist_url} target="_blank" rel="noreferrer" style={{ ...btnStyle(`${t.accent}15`, t.accent), textDecoration: "none" }}>
-            <Download size={14} /> Bajar Playlist
-          </a>
-          
-          {current_status === 'approved' && isAdmin && (
-            <button onClick={() => handleEvent(id, 'delivered')} style={btnStyle(t.green, "#fff")}>
-              <CheckCircle size={14} /> Entregar Operador
-            </button>
-          )}
-          {current_status === 'delivered' && (
-            <div style={{ fontSize: 12, fontWeight: 800, color: t.green, display: "flex", alignItems: "center", gap: 6 }}>
-              <CheckCircle size={16} /> Entregado
-            </div>
-          )}
-        </div>
-      );
+      return <button onClick={() => setActiveUpload(id)} style={btnStyle(`${t.lions}15`, t.lions)}><UploadCloud size={14} /> Subir Material</button>;
     }
 
     return null;
   };
 
+  // Logic: Grouping and Filtering
+  const filteredMatches = matches.filter(m => {
+    const countryCode = m.home_club?.leagues?.countries?.code?.toLowerCase();
+    if (selectedCountry !== "all" && countryCode !== selectedCountry.toLowerCase()) return false;
+    if (homeOnly && !m.home_club_id) return false;
+    return true;
+  });
+
+  const getGroup = (dateStr) => {
+    const d = new Date(dateStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return "HOY";
+    if (diff === 1) return "MAÑANA";
+    return "PRÓXIMOS";
+  };
+
+  const groups = { "HOY": [], "MAÑANA": [], "PRÓXIMOS": [] };
+  filteredMatches.forEach(m => groups[getGroup(m.match_date)].push(m));
+
   return (
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.3s" }}>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+      {/* Header with Filters */}
+      <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 20 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 900, color: t.text, margin: "0 0 8px" }}>📅 Agenda y Playlists</h1>
-          <p style={{ color: t.muted, fontSize: 13, margin: 0 }}>Gestioná la confirmación de partidos y la entrega de material por fecha.</p>
-        </div>
-        {(isAdmin || isProducer) && (
-          <div style={{ display: "flex", gap: 10 }}>
-            <button 
-              onClick={() => setHomeOnly(!homeOnly)} 
-              style={{ 
-                padding: "10px 16px", borderRadius: 10, 
-                background: homeOnly ? `${t.accent}15` : t.card, 
-                color: homeOnly ? t.accent : t.muted, 
-                border: `1px solid ${homeOnly ? t.accent : t.border}`, 
-                cursor: "pointer", fontWeight: 800, fontSize: 12,
-                display: "flex", alignItems: "center", gap: 8
-              }}
-            >
-              <CheckCircle size={14} /> {homeOnly ? "SOLO LOCAL" : "TODOS"}
-            </button>
-            <button onClick={() => setShowAddMatch(true)} style={{ padding: "10px 16px", borderRadius: 10, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12 }}>
-              + Añadir Partido Manual
-            </button>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: t.text, margin: "0 0 4px" }}>📅 Agenda Operativa</h1>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            {[
+              { id: 'all', label: 'TODAS', flag: '🌍' },
+              { id: 'cl', label: 'CHILE', flag: '🇨🇱' },
+              { id: 'ec', label: 'ECUADOR', flag: '🇪🇨' },
+              { id: 'pe', label: 'PERÚ', flag: '🇵🇪' }
+            ].map(c => (
+              <button 
+                key={c.id}
+                onClick={() => setSelectedCountry(selectedCountry === c.id ? 'all' : c.id)}
+                style={{ 
+                  padding: "8px 16px", borderRadius: 12, border: `1px solid ${selectedCountry === c.id ? t.accent : t.border}`,
+                  background: selectedCountry === c.id ? `${t.accent}15` : t.card,
+                  color: selectedCountry === c.id ? t.accent : t.muted,
+                  cursor: "pointer", fontWeight: 800, fontSize: 11, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s"
+                }}
+              >
+                <span>{c.flag}</span> {c.label}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => setHomeOnly(!homeOnly)} style={{ padding: "10px 16px", borderRadius: 10, background: homeOnly ? `${t.accent}15` : t.card, color: homeOnly ? t.accent : t.muted, border: `1px solid ${homeOnly ? t.accent : t.border}`, cursor: "pointer", fontWeight: 800, fontSize: 12 }}>
+            {homeOnly ? "SOLO LOCAL" : "TODOS"}
+          </button>
+          <button onClick={() => setShowAddMatch(true)} style={{ padding: "10px 16px", borderRadius: 10, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12 }}>+ Añadir</button>
+        </div>
       </div>
 
       {showAddMatch && (
@@ -194,140 +145,60 @@ export function Agenda({ t, paises = [] }) {
         }} />
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-        {matches.length === 0 && <div style={{ color: t.muted, padding: 20 }}>No hay partidos programados.</div>}
-        
-        {['Hoy y Mañana', 'Próximos 7 Días', 'Futuros'].map(groupName => {
-          let groupMatches = matches.filter(match => {
-            const matchDate = new Date(match.match_date);
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            
-            const diffTime = matchDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (groupName === 'Hoy y Mañana') return diffDays <= 1;
-            if (groupName === 'Próximos 7 Días') return diffDays > 1 && diffDays <= 7;
-            return diffDays > 7;
-          });
-
-          // Home Only Filter Logic
-          if (homeOnly) {
-            groupMatches = groupMatches.filter(m => {
-              // Si es admin/producer, solo muestra donde el local sea uno de nuestros clubes
-              // En este caso, home_club_id debe estar presente.
-              return !!m.home_club_id;
-            });
-          }
-
-          if (groupMatches.length === 0) return null;
-
+      <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+        {Object.entries(groups).map(([name, mlist]) => {
+          if (mlist.length === 0) return null;
           return (
-            <div key={groupName}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: t.text, textTransform: "uppercase", letterSpacing: 1, borderBottom: `2px solid ${t.border}`, paddingBottom: 8, marginBottom: 16 }}>{groupName}</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {groupMatches.map(match => {
-                  const homeName = match.home_club?.name || "Local";
-                  const homeLogo = match.home_club?.logo_url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
-                  const awayName = match.away_club?.name || match.away_team_name || "Visitante";
-                  const awayLogo = match.away_club?.logo_url || match.away_team_logo || "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg";
+            <div key={name}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <div style={{ height: 2, flex: 1, background: `linear-gradient(to right, ${t.border}, transparent)` }} />
+                <span style={{ fontSize: 12, fontWeight: 900, color: t.muted, letterSpacing: 2 }}>{name}</span>
+                <div style={{ height: 2, flex: 1, background: `linear-gradient(to left, ${t.border}, transparent)` }} />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {mlist.map(m => {
+                  const status = getStatusInfo(m);
+                  const flag = m.home_club?.leagues?.countries?.flag_emoji || "⚽";
+                  const stats = calcStats(m.home_club?.clients || []);
                   
-                  const statusInfo = getStatusInfo(match);
-                  const dateStr = format(new Date(match.match_date), "EEEE d 'de' MMMM, HH:mm'hs'", { locale: es });
-
-                  const clients = match.home_club?.clients || [];
-                  const stats = calcStats(clients);
-                  const hasAvailable = stats.disponibles > 0;
-
-                  // Ultra-simplified view for Operators
-                  if (profile?.role === 'operator') {
-                    return (
-                      <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", boxShadow: t.shadow }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 24, flex: 1 }}>
-                          <div style={{ minWidth: 150 }}>
-                            <div style={{ fontWeight: 800, color: t.text, fontSize: 13, textTransform: "capitalize" }}>{dateStr}</div>
-                            <div style={{ color: t.muted, fontSize: 11 }}>{match.stadium_name || match.venue || "Estadio a definir"}</div>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, fontWeight: 900, color: t.text }}>
-                            {homeName} <span style={{ color: t.muted, fontSize: 11 }}>VS</span> {awayName}
-                          </div>
-                        </div>
-                        
-                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: statusInfo.color }}>
-                            {statusInfo.icon} {statusInfo.label}
-                          </div>
-                          {renderActions(match)}
-                        </div>
-                      </div>
-                    );
-                  }
-
                   return (
-                    <div key={match.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, boxShadow: t.shadow }}>
-                      {/* Header: Status & Round */}
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, alignItems: "center", borderBottom: `1px dashed ${t.border}`, paddingBottom: 12 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5, textTransform: "uppercase" }}>
-                          {match.round || "Amistoso"}
+                    <div key={m.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", boxShadow: t.shadow }}>
+                      {/* Left: Info */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 20, flex: 1 }}>
+                        <div style={{ textAlign: "center", minWidth: 80 }}>
+                          <div style={{ fontSize: 13, fontWeight: 900, color: t.text }}>{format(new Date(m.match_date), 'HH:mm')}hs</div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: t.accent }}>{fmtArgTime(m.match_date)}</div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: statusInfo.color, background: `${statusInfo.color}15`, padding: "4px 10px", borderRadius: 20 }}>
-                          {statusInfo.icon} {statusInfo.label}
+
+                        <div style={{ height: 30, width: 1, background: t.border }} />
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontSize: 18 }}>{flag}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: t.text }}>
+                            <span>{m.home_club?.name}</span>
+                            <span style={{ fontSize: 10, color: t.muted }}>VS</span>
+                            <span style={{ color: t.muted }}>{m.away_club?.name || m.away_team_name}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Match Info */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
-                        
-                        {/* Teams */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 20, flex: "1 1 min-content" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, justifyContent: "flex-end" }}>
-                            <span style={{ fontSize: 16, fontWeight: 800, color: t.text, textAlign: "right" }}>{homeName}</span>
-                            <img src={homeLogo} alt={homeName} style={{ width: 40, height: 40, objectFit: "contain" }} />
-                          </div>
-                          
-                          <div style={{ fontSize: 12, fontWeight: 900, color: t.muted, background: t.bg, padding: "4px 8px", borderRadius: 6 }}>VS</div>
-                          
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                            <img src={awayLogo} alt={awayName} style={{ width: 40, height: 40, objectFit: "contain" }} />
-                            <span style={{ fontSize: 16, fontWeight: 800, color: t.text }}>{awayName}</span>
-                          </div>
+                      {/* Middle: Stats & Notes */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 9, fontWeight: 800, color: t.muted }}>ESPACIO LIBRE</div>
+                          <div style={{ fontSize: 14, fontWeight: 900, color: stats.disponibles > 0 ? t.green : t.lions }}>{stats.disponibles}'</div>
                         </div>
-
-                        {/* Details */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 200, borderLeft: `1px solid ${t.border}`, paddingLeft: 20 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.text, fontSize: 13, fontWeight: 600 }}>
-                            <Calendar size={14} color={t.muted} /> <span style={{textTransform: "capitalize"}}>{dateStr}</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, color: t.muted, fontSize: 12 }}>
-                            <MapPin size={14} /> {match.stadium_name || match.venue || "Estadio a definir"} {match.city ? `(${match.city})` : ''}
-                          </div>
-                        </div>
-
-                        {/* Sales & Notes (New V1.1) */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 180, borderLeft: `1px dashed ${t.border}`, paddingLeft: 20 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 0.5 }}>MINUTOS LIBRES:</span>
-                            <span style={{ fontSize: 16, fontWeight: 900, color: hasAvailable ? t.green : t.gray, background: hasAvailable ? `${t.green}15` : `${t.gray}20`, padding: "4px 8px", borderRadius: 6 }}>
-                              {stats.disponibles > 0 ? `${stats.disponibles}' DISPONIBLES` : 'SOBREVENDIDO'}
-                            </span>
-                          </div>
-                          
-                          {match.operational_notes && (
-                            <div style={{ background: `${t.amber}15`, border: `1px solid ${t.amber}40`, padding: 8, borderRadius: 8, marginTop: 4 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4, color: t.amber, fontSize: 10, fontWeight: 800, marginBottom: 4 }}>
-                                <AlertTriangle size={12} /> NOTAS OPERATIVAS
-                              </div>
-                              <div style={{ fontSize: 11, color: t.text, fontWeight: 600, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>
-                                {match.operational_notes}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        {m.operational_notes && <div title={m.operational_notes} style={{ background: `${t.amber}15`, color: t.amber, padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, border: `1px solid ${t.amber}30` }}>NOTAS 📝</div>}
                       </div>
 
-                      {/* Actions Area */}
-                      <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${t.border}`, display: "flex", justifyContent: "flex-end" }}>
-                        {renderActions(match)}
+                      {/* Right: Status & Actions */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 260, justifyContent: "flex-end", borderLeft: `1px solid ${t.border}`, paddingLeft: 16 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 800, color: status.color, background: `${status.color}15`, padding: "4px 10px", borderRadius: 6 }}>
+                          {status.icon} {status.label}
+                        </div>
+                        {renderActions(m)}
+                        {m.playlist_url && <a href={m.playlist_url} target="_blank" rel="noreferrer" style={{ background: t.green, color: "#fff", padding: "6px 10px", borderRadius: 6, textDecoration: "none", fontSize: 11, fontWeight: 800 }}>BAJAR</a>}
                       </div>
                     </div>
                   );
