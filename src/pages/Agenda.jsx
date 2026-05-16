@@ -111,6 +111,41 @@ export function Agenda({ t, paises = [] }) {
     return null;
   };
 
+  const handleEvent = async (matchId, eventType, payload = {}) => {
+    try {
+      await addMatchEvent(matchId, eventType, payload);
+    } catch (err) {
+      console.error("Error al guardar evento:", err);
+      alert("Error al actualizar el partido.");
+    }
+  };
+
+  const renderActions = (match) => {
+    const { id, current_status } = match;
+    const btnStyle = (bg, color) => ({
+      padding: "6px 12px", borderRadius: 8, border: "none", background: bg, color: color,
+      fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4
+    });
+
+    if (current_status === 'scheduled' || current_status === 'pending') {
+      return <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>Confirmar (Productor)</button>;
+    }
+    if (current_status === 'producer_confirmed' || current_status === 'chequeo') {
+      if (activeUpload === id) {
+        return (
+          <div style={{ display: "flex", gap: 6 }}>
+            <input type="text" placeholder="Link Dropbox..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }} />
+            <button onClick={() => { handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl }); setActiveUpload(null); }} style={btnStyle(t.accent, "#fff")}>Ok</button>
+            <button onClick={() => setActiveUpload(null)} style={btnStyle(t.bg, t.text)}>x</button>
+          </div>
+        );
+      }
+      return <button onClick={() => setActiveUpload(id)} style={btnStyle(`${t.lions}15`, t.lions)}><UploadCloud size={14} /> Subir Material</button>;
+    }
+
+    return <span style={{ fontSize: 10, color: t.muted, fontWeight: 700 }}>ESPERANDO PAUTA...</span>;
+  };
+
   // Logic: Grouping and Filtering
   const filteredMatches = matches.filter(m => {
     const countryCode = m.home_club?.leagues?.countries?.code?.toLowerCase();
