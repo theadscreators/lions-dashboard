@@ -115,7 +115,7 @@ async function syncFotMob() {
         
         // Vincular club local con mapeo manual para casos ambiguos
         const manualMap = {
-          "limache": "Deportes Limache",
+          "limache": "Dep. Limache",
           "u. catolica": "Universidad Catolica",
           "universidad de concepcion": "Universidad de Concepcion",
           "u. de concepcion": "Universidad de Concepcion",
@@ -168,6 +168,8 @@ async function syncFotMob() {
           league_id: league.id,
           home_club_id: homeClub?.id || null, 
           away_club_id: awayClub?.id || null,
+          home_team_name: homeClub ? null : homeName,
+          home_team_logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${homeId}.png`,
           away_team_name: awayClub ? null : awayName,
           away_team_logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${awayId}.png`,
           match_date: matchDate,

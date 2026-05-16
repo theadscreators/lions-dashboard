@@ -193,9 +193,11 @@ export function Agenda({ t, paises = [] }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 18 }}>{flag}</span>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: t.text }}>
+                              {m.display_home_logo && <img src={m.display_home_logo} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} />}
                               <span>{m.display_home_name}</span>
                               <span style={{ fontSize: 10, color: t.muted }}>VS</span>
-                              <span style={{ color: t.muted }}>{m.away_club?.name || m.away_team_name}</span>
+                              {m.display_away_logo && <img src={m.display_away_logo} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} />}
+                              <span style={{ color: t.muted }}>{m.display_away_name}</span>
                             </div>
                           </div>
                           <div style={{ fontSize: 9, color: t.muted, fontWeight: 600, marginTop: 2, marginLeft: 26 }}>
@@ -206,20 +208,35 @@ export function Agenda({ t, paises = [] }) {
 
                       {/* Middle: Stats & Notes */}
                       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 9, fontWeight: 800, color: t.muted }}>ESPACIO LIBRE</div>
-                          <div style={{ fontSize: 14, fontWeight: 900, color: stats.disponibles > 0 ? t.green : t.lions }}>{stats.disponibles}'</div>
-                        </div>
+                        {m.home_club_id ? (
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 9, fontWeight: 800, color: t.muted }}>ESPACIO LIBRE</div>
+                            <div style={{ fontSize: 14, fontWeight: 900, color: stats.disponibles > 0 ? t.green : t.lions }}>{stats.disponibles}'</div>
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: "right", opacity: 0.5 }}>
+                            <div style={{ fontSize: 9, fontWeight: 800, color: t.muted }}>INFO. LIGA</div>
+                            <div style={{ fontSize: 11, fontWeight: 900, color: t.muted }}>EXTERNO</div>
+                          </div>
+                        )}
                         {m.operational_notes && <div title={m.operational_notes} style={{ background: `${t.amber}15`, color: t.amber, padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, border: `1px solid ${t.amber}30` }}>NOTAS 📝</div>}
                       </div>
 
                       {/* Right: Status & Actions */}
                       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 260, justifyContent: "flex-end", borderLeft: `1px solid ${t.border}`, paddingLeft: 16 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 800, color: status.color, background: `${status.color}15`, padding: "4px 10px", borderRadius: 6 }}>
-                          {status.icon} {status.label}
-                        </div>
-                        {renderActions(m)}
-                        {m.playlist_url && <a href={m.playlist_url} target="_blank" rel="noreferrer" style={{ background: t.green, color: "#fff", padding: "6px 10px", borderRadius: 6, textDecoration: "none", fontSize: 11, fontWeight: 800 }}>BAJAR</a>}
+                        {m.home_club_id ? (
+                          <>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 800, color: status.color, background: `${status.color}15`, padding: "4px 10px", borderRadius: 6 }}>
+                              {status.icon} {status.label}
+                            </div>
+                            {renderActions(m)}
+                            {m.playlist_url && <a href={m.playlist_url} target="_blank" rel="noreferrer" style={{ background: t.green, color: "#fff", padding: "6px 10px", borderRadius: 6, textDecoration: "none", fontSize: 11, fontWeight: 800 }}>BAJAR</a>}
+                          </>
+                        ) : (
+                           <div style={{ fontSize: 10, color: t.muted, fontWeight: 700, fontStyle: "italic", opacity: 0.5 }}>
+                              NO GESTIONADO POR LIONS
+                           </div>
+                        )}
                       </div>
                     </div>
                   );

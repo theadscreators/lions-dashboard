@@ -85,12 +85,18 @@ export function useMatches(clubId = null, ready = true) {
         else if (hasProdConfirmed) status = 'producer_confirmed';
         else if (hasClubConfirmed) status = 'club_confirmed';
 
-        // Fix flag access: handle cases where Supabase might return arrays for N-1 relationships
         const clubLeague = Array.isArray(m.home_club?.leagues) ? m.home_club.leagues[0] : m.home_club?.leagues;
         const matchLeague = Array.isArray(m.leagues) ? m.leagues[0] : m.leagues;
         const league = clubLeague || matchLeague;
         
         const country = Array.isArray(league?.countries) ? league.countries[0] : league?.countries;
+        
+        let flag = country?.flag_emoji;
+        if (!flag && country?.code) {
+          const flagMap = { cl: '🇨🇱', ec: '🇪🇨', pe: '🇵🇪', py: '🇵🇾' };
+          flag = flagMap[country.code.toLowerCase()];
+        }
+        flag = flag || "⚽";
         
         return {
           ...m,
@@ -98,10 +104,13 @@ export function useMatches(clubId = null, ready = true) {
           playlist_url: matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
           events: matchEvents,
           // Flattened data for easier access
-          country_flag: country?.flag_emoji || "⚽",
+          country_flag: flag,
           country_code: country?.code || "",
           league_name: league?.name || "Liga",
-          display_home_name: m.home_club?.name || m.home_team_name || "Equipo Local"
+          display_home_name: m.home_club?.name || m.home_team_name || "Equipo Local",
+          display_away_name: m.away_club?.name || m.away_team_name || "Equipo Visitante",
+          display_home_logo: m.home_club?.logo_url || m.home_team_logo,
+          display_away_logo: m.away_club?.logo_url || m.away_team_logo
         };
       });
 
