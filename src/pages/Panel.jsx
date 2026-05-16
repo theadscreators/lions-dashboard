@@ -247,6 +247,17 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
   );
 }
 
+const getStatusInfo = (match, t) => {
+  const { current_status, operational_notes, playlist_url } = match;
+  if (playlist_url || ['delivered', 'approved', 'playlist_ready'].includes(current_status)) {
+    return { label: "LISTO", color: t.green };
+  }
+  if (operational_notes || ['club_confirmed', 'producer_confirmed', 'all_confirmed'].includes(current_status)) {
+    return { label: "CHEQUEO", color: t.amber };
+  }
+  return { label: "PENDIENTE", color: t.lions };
+};
+
 function ClubDashboard({ t, auth, paises }) {
   const navigate = useNavigate();
   const myClubId = auth.profile?.club_ids?.[0]; // Simplified for now
