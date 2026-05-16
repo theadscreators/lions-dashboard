@@ -341,16 +341,4 @@ function occupancyPercent(total) {
   return Math.round((total / 90) * 100);
 }
 
-function getStatusInfo(match, t) {
-  const { current_status, operational_notes, playlist_url } = match;
-  
-  if (playlist_url || current_status === 'delivered' || current_status === 'approved' || current_status === 'playlist_ready') {
-    return { label: "LISTO", color: t.green };
-  }
-
-  if (operational_notes || current_status === 'club_confirmed' || current_status === 'producer_confirmed' || current_status === 'all_confirmed') {
-    return { label: "CHEQUEO", color: t.amber };
-  }
-
-  return { label: "PENDIENTE", color: t.lions };
 }

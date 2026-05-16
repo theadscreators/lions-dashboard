@@ -50,70 +50,12 @@ export function Agenda({ t, paises = [] }) {
   }
 
   const handleEvent = async (matchId, eventType, payload = {}) => {
-    await addMatchEvent(matchId, eventType, user.id, profile.name, payload);
-    if (eventType === 'playlist_uploaded') {
-      setActiveUpload(null);
-      setUploadUrl("");
-    }
-  };
-
-  const getStatusInfo = (match) => {
-    const { current_status, operational_notes, playlist_url } = match;
-    if (playlist_url || ['delivered', 'approved', 'playlist_ready'].includes(current_status)) {
-      return { label: "LISTO", color: t.green, icon: <CheckCircle size={14} /> };
-    }
-    if (operational_notes || ['club_confirmed', 'producer_confirmed', 'all_confirmed'].includes(current_status)) {
-      return { label: "CHEQUEO", color: t.amber, icon: <AlertTriangle size={14} /> };
-    }
-    return { label: "PENDIENTE", color: t.lions, icon: <Clock size={14} /> };
-  };
-
-  const fmtArgTime = (dateStr) => {
-    const d = new Date(dateStr);
-    // Format to "09:00 pm ARG"
-    return d.toLocaleTimeString('en-US', { 
-      timeZone: 'America/Argentina/Buenos_Aires', 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: true 
-    }).toLowerCase().replace(' am', 'am').replace(' pm', 'pm') + " ARG";
-  };
-
-  const renderActions = (match) => {
-    const { current_status, id, events } = match;
-    const isProdOrAdmin = isAdmin || isProducer;
-
-    const btnStyle = (bg, color) => ({
-      padding: "6px 12px", borderRadius: 8, border: "none", background: bg, color, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: FONT
-    });
-
-    const hasProdConfirmed = events.some(e => e.event_type === 'producer_confirmed');
-
-    // Admin/Producer can confirm
-    if (!hasProdConfirmed && isProdOrAdmin) {
-      return <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>Confirmar (Productor)</button>;
-    }
-
-    // After producer confirms (even if club hasn't), allow Admin to upload material
-    if (hasProdConfirmed && isAdmin && !match.playlist_url) {
-      if (activeUpload === id) {
-        return (
-          <div style={{ display: "flex", gap: 6 }}>
-            <input type="text" placeholder="Link Dropbox..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }} />
-            <button onClick={() => handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl })} style={btnStyle(t.accent, "#fff")}>Ok</button>
-            <button onClick={() => setActiveUpload(null)} style={btnStyle(t.bg, t.text)}>x</button>
-          </div>
-        );
-      }
-      return <button onClick={() => setActiveUpload(id)} style={btnStyle(`${t.lions}15`, t.lions)}><UploadCloud size={14} /> Subir Material</button>;
-    }
-
-    return null;
-  };
-
-  const handleEvent = async (matchId, eventType, payload = {}) => {
     try {
       await addMatchEvent(matchId, eventType, payload);
+      if (eventType === 'playlist_uploaded') {
+        setActiveUpload(null);
+        setUploadUrl("");
+      }
     } catch (err) {
       console.error("Error al guardar evento:", err);
       alert("Error al actualizar el partido.");
@@ -121,21 +63,27 @@ export function Agenda({ t, paises = [] }) {
   };
 
   const renderActions = (match) => {
-    const { id, current_status } = match;
+    const { id, events, current_status, playlist_url } = match;
+    const isProdOrAdmin = isAdmin || isProducer;
+    const hasProdConfirmed = events.some(e => e.event_type === 'producer_confirmed') || current_status === 'chequeo';
+
     const btnStyle = (bg, color) => ({
       padding: "6px 12px", borderRadius: 8, border: "none", background: bg, color: color,
-      fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4
+      fontSize: 10, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: FONT
     });
 
-    if (current_status === 'scheduled' || current_status === 'pending') {
+    // Admin/Producer can confirm
+    if (!hasProdConfirmed && isProdOrAdmin) {
       return <button onClick={() => handleEvent(id, 'producer_confirmed')} style={btnStyle(t.lions, "#fff")}>Confirmar (Productor)</button>;
     }
-    if (current_status === 'producer_confirmed' || current_status === 'chequeo') {
+
+    // After producer confirms (even if club hasn't), allow Admin to upload material
+    if (hasProdConfirmed && isAdmin && !playlist_url) {
       if (activeUpload === id) {
         return (
           <div style={{ display: "flex", gap: 6 }}>
             <input type="text" placeholder="Link Dropbox..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }} />
-            <button onClick={() => { handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl }); setActiveUpload(null); }} style={btnStyle(t.accent, "#fff")}>Ok</button>
+            <button onClick={() => { handleEvent(id, 'playlist_uploaded', { playlist_url: uploadUrl }); }} style={btnStyle(t.accent, "#fff")}>Ok</button>
             <button onClick={() => setActiveUpload(null)} style={btnStyle(t.bg, t.text)}>x</button>
           </div>
         );
@@ -143,7 +91,9 @@ export function Agenda({ t, paises = [] }) {
       return <button onClick={() => setActiveUpload(id)} style={btnStyle(`${t.lions}15`, t.lions)}><UploadCloud size={14} /> Subir Material</button>;
     }
 
-    return <span style={{ fontSize: 10, color: t.muted, fontWeight: 700 }}>ESPERANDO PAUTA...</span>;
+    if (!hasProdConfirmed) return <span style={{ fontSize: 10, color: t.muted, fontWeight: 700 }}>PENDIENTE CONF.</span>;
+
+    return <span style={{ fontSize: 10, color: t.muted, fontWeight: 700 }}>{playlist_url ? 'MATERIAL CARGADO' : 'ESPERANDO PAUTA...'}</span>;
   };
 
   // Logic: Grouping and Filtering
