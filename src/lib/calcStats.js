@@ -1,10 +1,11 @@
 import { fmt } from "./formatters";
 
 export function calcStats(clientes) {
-  const totalLions = clientes.filter(c => c.categoria === "LIONS").reduce((s, c) => s + c.minutos, 0);
-  const totalClub = clientes.filter(c => c.categoria === "CLUB").reduce((s, c) => s + c.minutos, 0);
-  const totalOtros = clientes.filter(c => c.categoria === "OTROS").reduce((s, c) => s + c.minutos, 0);
-  const totalBonificados = clientes.reduce((s, c) => s + Math.max(0, c.bonificados), 0);
+export function calcStats(clientes) {
+  const totalLions = clientes.filter(c => c.category === "LIONS").reduce((s, c) => s + (c.minutes || 0), 0);
+  const totalClub = clientes.filter(c => c.category === "CLUB").reduce((s, c) => s + (c.minutes || 0), 0);
+  const totalOtros = clientes.filter(c => c.category === "OTROS").reduce((s, c) => s + (c.minutes || 0), 0);
+  const totalBonificados = clientes.reduce((s, c) => s + Math.max(0, c.bonified || 0), 0);
   const totalReal = totalLions + totalClub + totalOtros;
   const disponibles = Math.max(0, 90 - totalReal);
   return { totalLions, totalClub, totalOtros, totalBonificados, totalReal, disponibles };
