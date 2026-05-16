@@ -41,9 +41,9 @@ export function Panel({ t, auth, paises }) {
   }, { lions: 0, club: 0, total: 0, disp: 0 });
 
   const totalPossible = activos.length * 90;
-  const occupancyPercent = totalPossible > 0 ? Math.round((globalStats.total / totalPossible) * 100) : 0;
+  const occupancyPercentGlobal = totalPossible > 0 ? Math.round((globalStats.total / totalPossible) * 100) : 0;
 
-  if (isStaff) return <AdminDashboard t={t} stats={globalStats} occupancy={occupancyPercent} paises={paises} profile={profile} matches={matches} matchesLoading={matchesLoading} />;
+  if (isStaff) return <AdminDashboard t={t} stats={globalStats} occupancy={occupancyPercentGlobal} paises={paises} profile={profile} matches={matches} matchesLoading={matchesLoading} />;
   
   if (role === 'operator') return <Navigate to="/agenda" replace />;
 
@@ -290,7 +290,7 @@ function ClubDashboard({ t, auth, paises }) {
              <div style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 1, marginBottom: 20 }}>ESTADO COMERCIAL</div>
              <div style={{ marginBottom: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                   <span style={{ fontSize: 14, fontWeight: 800, color: t.text }}>{occupancyPercent(stats.totalReal)}% ocupado</span>
+                   <span style={{ fontSize: 14, fontWeight: 800, color: t.text }}>{Math.round((stats.totalReal / 90) * 100)}% ocupado</span>
                    <span style={{ fontSize: 14, fontWeight: 900, color: t.green }}>{fmt(stats.disponibles)}' libres</span>
                 </div>
                 <StackedBar stats={stats} t={t} height={12} />
@@ -298,16 +298,16 @@ function ClubDashboard({ t, auth, paises }) {
              
              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                  <span style={{ color: t.muted, fontWeight: 600 }}>Minutos Lions</span>
-                  <span style={{ fontWeight: 800, color: t.lions }}>{fmt(stats.totalLions)}'</span>
+                   <span style={{ color: t.muted, fontWeight: 600 }}>Minutos Lions</span>
+                   <span style={{ fontWeight: 800, color: t.lions }}>{fmt(stats.totalLions)}'</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                  <span style={{ color: t.muted, fontWeight: 600 }}>Minutos Club</span>
-                  <span style={{ fontWeight: 800, color: t.club }}>{fmt(stats.totalClub)}'</span>
+                   <span style={{ color: t.muted, fontWeight: 600 }}>Minutos Club</span>
+                   <span style={{ fontWeight: 800, color: t.club }}>{fmt(stats.totalClub)}'</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                  <span style={{ color: t.muted, fontWeight: 600 }}>Bonificados</span>
-                  <span style={{ fontWeight: 800, color: t.text }}>{fmt(stats.totalBonificados)}'</span>
+                   <span style={{ color: t.muted, fontWeight: 600 }}>Bonificados</span>
+                   <span style={{ fontWeight: 800, color: t.text }}>{fmt(stats.totalBonificados)}'</span>
                 </div>
              </div>
           </div>
@@ -321,13 +321,13 @@ function ClubDashboard({ t, auth, paises }) {
         <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 20, padding: 24, boxShadow: t.shadow }}>
            <div style={{ fontSize: 11, fontWeight: 800, color: t.muted, letterSpacing: 1, marginBottom: 20 }}>TUS MARCAS ACTIVAS (LOCALES)</div>
            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {club.clientes.filter(c => c.categoria === 'CLUB').map((c, i) => (
+              {club.clientes.filter(c => c.category === 'CLUB').map((c, i) => (
                 <div key={i} style={{ background: t.bg, border: `1px solid ${t.border}`, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                    <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{c.nombre}</div>
-                   <div style={{ fontSize: 14, fontWeight: 900, color: t.club }}>{fmt(c.minutos)}'</div>
+                   <div style={{ fontSize: 14, fontWeight: 900, color: t.club }}>{fmt(c.minutes)}'</div>
                 </div>
               ))}
-              {club.clientes.filter(c => c.categoria === 'CLUB').length === 0 && (
+              {club.clientes.filter(c => c.category === 'CLUB').length === 0 && (
                 <div style={{ gridColumn: "1 / -1", color: t.muted, fontSize: 12, fontStyle: "italic" }}>No tienes marcas locales registradas.</div>
               )}
            </div>
@@ -335,10 +335,4 @@ function ClubDashboard({ t, auth, paises }) {
       </div>
     </div>
   );
-}
-
-function occupancyPercent(total) {
-  return Math.round((total / 90) * 100);
-}
-
 }

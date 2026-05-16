@@ -1,7 +1,6 @@
 import { fmt } from "./formatters";
 
 export function calcStats(clientes) {
-export function calcStats(clientes) {
   const totalLions = clientes.filter(c => c.category === "LIONS").reduce((s, c) => s + (c.minutes || 0), 0);
   const totalClub = clientes.filter(c => c.category === "CLUB").reduce((s, c) => s + (c.minutes || 0), 0);
   const totalOtros = clientes.filter(c => c.category === "OTROS").reduce((s, c) => s + (c.minutes || 0), 0);
