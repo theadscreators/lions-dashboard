@@ -167,7 +167,6 @@ async function syncFotMob() {
         const matchData = {
           league_id: league.id,
           home_club_id: homeClub?.id || null, 
-          home_team_name: homeClub ? null : homeName, // Guardar el nombre original si no lo vinculamos
           away_club_id: awayClub?.id || null,
           away_team_name: awayClub ? null : awayName,
           away_team_logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${awayId}.png`,

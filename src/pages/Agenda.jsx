@@ -3,11 +3,35 @@ import { FONT } from "../theme/theme";
 import { useAuth } from "../hooks/useAuth";
 import { useMatches } from "../hooks/useMatches";
 import { calcStats } from "../lib/calcStats";
-import { Calendar, MapPin, CheckCircle, UploadCloud, Download, AlertCircle, Clock, AlertTriangle } from "lucide-react";
+import { fmt } from "../lib/formatters";
 import { format } from "date-fns";
+import { Calendar, MapPin, CheckCircle, UploadCloud, Download, AlertCircle, Clock, AlertTriangle } from "lucide-react";
 import { es } from "date-fns/locale";
 
 export function Agenda({ t, paises = [] }) {
+  const fmtArgTime = (dateStr) => {
+    return new Date(dateStr).toLocaleTimeString('en-US', { 
+      timeZone: 'America/Argentina/Buenos_Aires', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    }).toLowerCase().replace(' am', 'am').replace(' pm', 'pm') + " ARG";
+  };
+
+  const getStatusInfo = (match) => {
+    const { current_status, events = [], playlist_url } = match;
+    if (playlist_url || current_status === 'playlist_ready' || ['delivered', 'approved'].includes(current_status)) {
+      return { label: "LISTO", color: t.green, icon: <CheckCircle size={14} /> };
+    }
+    const hasClubConfirmed = events.some(e => e.event_type === 'club_confirmed');
+    const hasProducerConfirmed = events.some(e => e.event_type === 'producer_confirmed');
+    
+    if (hasClubConfirmed || hasProducerConfirmed || current_status === 'chequeo') {
+      return { label: "CHEQUEO", color: t.amber, icon: <Clock size={14} /> };
+    }
+    return { label: "PENDIENTE", color: t.lions, icon: <AlertTriangle size={14} /> };
+  };
+
   const { user, profile, isAdmin, isProducer } = useAuth();
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [uploadUrl, setUploadUrl] = useState("");
