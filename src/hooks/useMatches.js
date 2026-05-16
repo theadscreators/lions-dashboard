@@ -27,6 +27,7 @@ export function useMatches(clubId = null, ready = true) {
         .from("matches")
         .select(`
           *,
+          leagues(id, name, countries(id, name, flag_emoji, code)),
           home_club:clubs!home_club_id(
             id, name, logo_url, 
             clients(*),
@@ -85,7 +86,10 @@ export function useMatches(clubId = null, ready = true) {
         else if (hasClubConfirmed) status = 'club_confirmed';
 
         // Fix flag access: handle cases where Supabase might return arrays for N-1 relationships
-        const league = Array.isArray(m.home_club?.leagues) ? m.home_club.leagues[0] : m.home_club?.leagues;
+        const clubLeague = Array.isArray(m.home_club?.leagues) ? m.home_club.leagues[0] : m.home_club?.leagues;
+        const matchLeague = Array.isArray(m.leagues) ? m.leagues[0] : m.leagues;
+        const league = clubLeague || matchLeague;
+        
         const country = Array.isArray(league?.countries) ? league.countries[0] : league?.countries;
         
         return {
@@ -93,9 +97,11 @@ export function useMatches(clubId = null, ready = true) {
           current_status: status,
           playlist_url: matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
           events: matchEvents,
-          // Flattened flag for easier access
+          // Flattened data for easier access
           country_flag: country?.flag_emoji || "⚽",
-          country_code: country?.code || ""
+          country_code: country?.code || "",
+          league_name: league?.name || "Liga",
+          display_home_name: m.home_club?.name || m.home_team_name || "Equipo Local"
         };
       });
 

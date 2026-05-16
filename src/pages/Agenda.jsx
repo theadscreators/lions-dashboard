@@ -166,25 +166,31 @@ export function Agenda({ t, paises = [] }) {
                 {mlist.map(m => {
                   const status = getStatusInfo(m);
                   const flag = m.country_flag || "⚽";
+                  const leagueLabel = m.league_name || "";
                   const stats = calcStats(m.home_club?.clients || []);
                   
                   return (
-                    <div key={m.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", boxShadow: t.shadow }}>
-                      {/* Left: Info */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 20, flex: 1 }}>
+                    <div key={m.id} style={{ 
+                      background: `${t.bg}80`, borderRadius: 16, padding: 16, border: `1px solid ${t.border}`,
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 200 }}>
                         <div style={{ textAlign: "center", minWidth: 80 }}>
                           <div style={{ fontSize: 13, fontWeight: 900, color: t.text }}>{format(new Date(m.match_date), 'HH:mm')}hs</div>
                           <div style={{ fontSize: 9, fontWeight: 700, color: t.accent }}>{fmtArgTime(m.match_date)}</div>
                         </div>
-
-                        <div style={{ height: 30, width: 1, background: t.border }} />
-
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 18 }}>{flag}</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: t.text }}>
-                            <span>{m.home_club?.name}</span>
-                            <span style={{ fontSize: 10, color: t.muted }}>VS</span>
-                            <span style={{ color: t.muted }}>{m.away_club?.name || m.away_team_name}</span>
+                        <div style={{ width: 1, height: 30, background: t.border }} />
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 18 }}>{flag}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: t.text }}>
+                              <span>{m.display_home_name}</span>
+                              <span style={{ fontSize: 10, color: t.muted }}>VS</span>
+                              <span style={{ color: t.muted }}>{m.away_club?.name || m.away_team_name}</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 9, color: t.muted, fontWeight: 600, marginTop: 2, marginLeft: 26 }}>
+                            {leagueLabel.toUpperCase()}
                           </div>
                         </div>
                       </div>

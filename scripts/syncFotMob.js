@@ -50,7 +50,12 @@ async function syncFotMob() {
   const clubByName = {};
   const clubBySlug = {};
 
-  const slugify = (text) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const slugify = (text) => {
+    return text.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+      .replace(/^(u\.|dep\.|c\.d\.|club|universidad de|deportivo|sporting|atletico|real)\s+/i, "") // Remove common prefixes
+      .replace(/[^a-z0-9]/g, "");
+  };
 
   clubs.forEach(c => {
     if (c.fotmob_id) clubByFotMobId[c.fotmob_id] = c;
@@ -108,8 +113,39 @@ async function syncFotMob() {
           const homeName = match.home.name;
           const awayName = match.away.name;
         
-        // Vincular club local
-        let homeClub = clubByFotMobId[homeId] || clubByName[homeName.toLowerCase()] || clubBySlug[slugify(homeName)];
+        // Vincular club local con mapeo manual para casos ambiguos
+        const manualMap = {
+          "limache": "Deportes Limache",
+          "u. catolica": "Universidad Catolica",
+          "universidad de concepcion": "Universidad de Concepcion",
+          "u. de concepcion": "Universidad de Concepcion",
+          "univ. concepcion": "Universidad de Concepcion"
+        };
+
+        const searchName = homeName.toLowerCase().trim();
+        let homeClub = clubByFotMobId[homeId];
+
+        if (!homeClub) {
+          const mappedName = manualMap[searchName];
+          if (mappedName) {
+            homeClub = clubByName[mappedName.toLowerCase()];
+          }
+        }
+
+        if (!homeClub) {
+          // Búsqueda por slug pero evitando el error de Concepción
+          const slug = slugify(homeName);
+          if (slug === 'concepcion') {
+             // Si el nombre original contiene "Universidad", forzar U de Conce
+             if (homeName.toLowerCase().includes('universidad') || homeName.toLowerCase().includes('u.')) {
+               homeClub = clubByName['universidad de concepcion'];
+             } else {
+               homeClub = clubByName['deportes concepcion'];
+             }
+          } else {
+            homeClub = clubBySlug[slug];
+          }
+        }
         
         if (homeClub && !homeClub.fotmob_id) {
           await supabase.from("clubs").update({ fotmob_id: homeId }).eq("id", homeClub.id);
@@ -131,6 +167,7 @@ async function syncFotMob() {
         const matchData = {
           league_id: league.id,
           home_club_id: homeClub?.id || null, 
+          home_team_name: homeClub ? null : homeName, // Guardar el nombre original si no lo vinculamos
           away_club_id: awayClub?.id || null,
           away_team_name: awayClub ? null : awayName,
           away_team_logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${awayId}.png`,
