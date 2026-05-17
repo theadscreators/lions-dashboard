@@ -36,8 +36,13 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
       
       const homeClub = allEquipos.find(e => e.id === match.home_club_id);
       const isHighAudience = ['Colo-Colo', 'U. de Chile', 'Barcelona SC', 'Alianza Lima'].some(t => 
-        match.away_team_name?.includes(t) || match.away_club?.name?.includes(t)
+        match.display_away_name?.includes(t)
       );
+
+      const homeName = match.display_home_name;
+      const awayName = match.display_away_name;
+      const homeLogo = match.display_home_logo;
+      const awayLogo = match.display_away_logo;
 
       // 1. Partido < 72hs + playlist no subida -> Urgente (Solo Admin/Producer)
       if (hoursUntil <= 72 && hoursUntil > 0 && match.current_status !== 'playlist_ready' && match.current_status !== 'approved' && match.current_status !== 'delivered') {
@@ -46,7 +51,8 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
             id: `urgent_playlist_${match.id}`,
             type: 'urgent',
             title: `Playlist pendiente a ${hoursUntil}hs del partido`,
-            description: `${homeClub?.nombre || 'Club'} vs ${match.away_team_name || 'Rival'}`,
+            description: `${homeName} vs ${awayName}`,
+            homeLogo, awayLogo,
             actionLink: '/agenda'
           });
         }
@@ -60,7 +66,8 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
             id: `high_unconfirmed_${match.id}`,
             type: 'warning',
             title: `Falta confirmación a ${hoursUntil}hs`,
-            description: `El club debe confirmar la pauta para ${homeClub?.nombre} vs ${match.away_team_name}`,
+            description: `El club debe confirmar la pauta para ${homeName} vs ${awayName}`,
+            homeLogo, awayLogo,
             actionLink: '/agenda'
           });
         }
@@ -76,7 +83,8 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
             id: `opp_audience_${match.id}`,
             type: 'opportunity',
             title: `Oportunidad: Alta Audiencia (${stats.disponibles}' libres)`,
-            description: `Venta recomendada para el partido contra ${match.away_team_name || 'Rival'}`,
+            description: `Venta recomendada para el partido contra ${awayName}`,
+            homeLogo, awayLogo,
             actionLink: '/clientes'
           });
         }
@@ -88,6 +96,7 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
             type: 'info',
             title: `Sold Out: ${homeClub.nombre}`,
             description: `Inventario completo para el partido de esta semana.`,
+            homeLogo: homeClub.logo,
             actionLink: null
           });
         }

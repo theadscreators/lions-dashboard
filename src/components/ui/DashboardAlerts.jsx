@@ -38,10 +38,14 @@ export function DashboardAlerts({ t, profile, matches = [], requests = [], paise
           const content = (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: style.bg, border: `1px solid ${style.color}30`, borderRadius: 12, padding: "12px 16px", cursor: alert.actionLink ? "pointer" : "default", transition: "all 0.2s" }} onMouseOver={e => alert.actionLink && (e.currentTarget.style.background = `${style.color}25`)} onMouseOut={e => alert.actionLink && (e.currentTarget.style.background = style.bg)}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ color: style.color }}>{style.icon}</div>
+                <div style={{ color: style.color, display: "flex", alignItems: "center", justifyContent: "center", minWidth: 32 }}>{style.icon}</div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: t.text }}>{alert.title}</div>
-                  <div style={{ fontSize: 11, color: t.muted, marginTop: 2 }}>{alert.description}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: t.text, marginBottom: 4 }}>{alert.title}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: t.muted }}>
+                    {alert.homeLogo && <img src={alert.homeLogo} alt="" style={{ width: 14, height: 14, objectFit: "contain" }} />}
+                    <span>{alert.description}</span>
+                    {alert.awayLogo && <img src={alert.awayLogo} alt="" style={{ width: 14, height: 14, objectFit: "contain" }} />}
+                  </div>
                 </div>
               </div>
               {alert.actionLink && (
