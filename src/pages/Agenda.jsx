@@ -185,23 +185,17 @@ export function Agenda({ t, paises = [] }) {
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 200 }}>
                         <div style={{ textAlign: "center", minWidth: 80 }}>
-                          <div style={{ fontSize: 13, fontWeight: 900, color: t.text }}>{format(new Date(m.match_date), 'HH:mm')}hs</div>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: t.accent }}>{fmtArgTime(m.match_date)}</div>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: t.text }}>{format(new Date(m.match_date), 'HH:mm')}hs</div>
                         </div>
                         <div style={{ width: 1, height: 30, background: t.border }} />
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 18 }}>{flag}</span>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: t.text }}>
-                              {m.display_home_logo && <img src={m.display_home_logo} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} />}
-                              <span>{m.display_home_name}</span>
-                              <span style={{ fontSize: 10, color: t.muted }}>VS</span>
-                              {m.display_away_logo && <img src={m.display_away_logo} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} />}
-                              <span style={{ color: t.muted }}>{m.display_away_name}</span>
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 9, color: t.muted, fontWeight: 600, marginTop: 2, marginLeft: 26 }}>
-                            {leagueLabel.toUpperCase()}
+                        <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingLeft: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, fontWeight: 800, color: t.text }}>
+                            <span style={{ fontSize: 14 }} title={m.country_code}>{flag}</span>
+                            <span style={{ minWidth: 120, textAlign: "right" }}>{m.display_home_name}</span>
+                            {m.display_home_logo && <img src={m.display_home_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} />}
+                            <div style={{ fontSize: 10, color: t.muted, background: `${t.bg}50`, padding: "4px 8px", borderRadius: 6, fontWeight: 900 }}>VS</div>
+                            {m.display_away_logo && <img src={m.display_away_logo} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} />}
+                            <span style={{ minWidth: 120, textAlign: "left" }}>{m.display_away_name}</span>
                           </div>
                         </div>
                       </div>
