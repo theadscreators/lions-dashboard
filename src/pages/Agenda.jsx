@@ -108,12 +108,13 @@ export function Agenda({ t, paises = [] }) {
     const d = new Date(dateStr);
     const today = new Date(); today.setHours(0,0,0,0);
     const diff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return "PASADOS";
     if (diff === 0) return "HOY";
     if (diff === 1) return "MAÑANA";
     return "PRÓXIMOS";
   };
 
-  const groups = { "HOY": [], "MAÑANA": [], "PRÓXIMOS": [] };
+  const groups = { "HOY": [], "MAÑANA": [], "PRÓXIMOS": [], "PASADOS": [] };
   filteredMatches.forEach(m => groups[getGroup(m.match_date)].push(m));
 
   return (
@@ -174,7 +175,7 @@ export function Agenda({ t, paises = [] }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {mlist.map(m => {
                   const status = getStatusInfo(m);
-                  const flag = m.country_flag || "⚽";
+                  const flag = m.flag_emoji || "⚽";
                   const leagueLabel = m.league_name || "";
                   const stats = calcStats(m.home_club?.clients || []);
                   
@@ -186,8 +187,9 @@ export function Agenda({ t, paises = [] }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 200 }}>
                         <div style={{ textAlign: "center", minWidth: 80 }}>
                           <div style={{ fontSize: 16, fontWeight: 900, color: t.text }}>{format(new Date(m.match_date), 'HH:mm')}hs</div>
+                          {m.round_name && <div style={{ fontSize: 9, fontWeight: 700, color: t.muted, marginTop: 4 }}>{m.round_name}</div>}
                         </div>
-                        <div style={{ width: 1, height: 30, background: t.border }} />
+                        <div style={{ width: 1, height: 40, background: t.border }} />
                         <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingLeft: 12 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, fontWeight: 800, color: t.text }}>
                             <span style={{ fontSize: 14 }} title={m.country_code}>{flag}</span>

@@ -119,49 +119,30 @@ async function syncFotMob() {
           "u. catolica": "Universidad Catolica",
           "universidad de concepcion": "Universidad de Concepcion",
           "u. de concepcion": "Universidad de Concepcion",
-          "univ. concepcion": "Universidad de Concepcion"
+          "univ. concepcion": "Universidad de Concepcion",
+          "everton cd": "Everton"
         };
 
-        const searchName = homeName.toLowerCase().trim();
-        let homeClub = clubByFotMobId[homeId];
+        let homeNameMapped = manualMap[homeName.toLowerCase().trim()] || homeName;
+        let awayNameMapped = manualMap[awayName.toLowerCase().trim()] || awayName;
 
-        if (!homeClub) {
-          const mappedName = manualMap[searchName];
-          if (mappedName) {
-            homeClub = clubByName[mappedName.toLowerCase()];
-          }
-        }
-
-        if (!homeClub) {
-          // Búsqueda por slug pero evitando el error de Concepción
-          const slug = slugify(homeName);
-          if (slug === 'concepcion') {
-             // Si el nombre original contiene "Universidad", forzar U de Conce
-             if (homeName.toLowerCase().includes('universidad') || homeName.toLowerCase().includes('u.')) {
-               homeClub = clubByName['universidad de concepcion'];
-             } else {
-               homeClub = clubByName['deportes concepcion'];
-             }
-          } else {
-            homeClub = clubBySlug[slug];
-          }
-        }
-        
+        // Vincular club local (si existe en nuestra DB)
+        let homeClub = clubByFotMobId[homeId] || clubByName[homeNameMapped.toLowerCase()] || clubBySlug[slugify(homeNameMapped)];
         if (homeClub && !homeClub.fotmob_id) {
-          await supabase.from("clubs").update({ fotmob_id: homeId }).eq("id", homeClub.id);
-          homeClub.fotmob_id = homeId;
-          clubByFotMobId[homeId] = homeClub;
+            await supabase.from("clubs").update({ fotmob_id: homeId }).eq("id", homeClub.id);
+            homeClub.fotmob_id = homeId;
+            clubByFotMobId[homeId] = homeClub;
         }
 
         // Vincular club visitante (si existe en nuestra DB)
-        let awayClub = clubByFotMobId[awayId] || clubByName[awayName.toLowerCase()] || clubBySlug[slugify(awayName)];
+        let awayClub = clubByFotMobId[awayId] || clubByName[awayNameMapped.toLowerCase()] || clubBySlug[slugify(awayNameMapped)];
         if (awayClub && !awayClub.fotmob_id) {
             await supabase.from("clubs").update({ fotmob_id: awayId }).eq("id", awayClub.id);
             awayClub.fotmob_id = awayId;
             clubByFotMobId[awayId] = awayClub;
         }
 
-        const matchDate = (match.status?.utcTime || match.utcTime) ? new Date(match.status?.utcTime || match.utcTime).toISOString() : new Date().toISOString();
+        const matchDate = (match.status?.utcTime || match.utcTime) ? new Date(match.status?.utcTime || match.utcTime) : new Date();
         const stadium = match.venue?.name || match.stadium?.name || null;
         
         const matchData = {
@@ -172,9 +153,10 @@ async function syncFotMob() {
           home_team_logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${homeId}.png`,
           away_team_name: awayClub ? null : awayName,
           away_team_logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${awayId}.png`,
-          match_date: matchDate,
+          match_date: matchDate.toISOString(),
           stadium_name: stadium,
           round: match.roundText || match.round || null,
+          round_name: match.roundName || match.round || null,
           api_match_id: match.id.toString(),
           status: "scheduled"
         };
