@@ -116,11 +116,15 @@ async function syncFotMob() {
         // Vincular club local con mapeo manual para casos ambiguos
         const manualMap = {
           "limache": "Dep. Limache",
+          "deportes limache": "Dep. Limache",
           "u. catolica": "Universidad Catolica",
+          "universidad catolica": "U. Católica",
           "universidad de concepcion": "Universidad de Concepcion",
           "u. de concepcion": "Universidad de Concepcion",
           "univ. concepcion": "Universidad de Concepcion",
-          "everton cd": "Everton"
+          "everton cd": "Everton",
+          "csd macara": "Macará",
+          "universitario de deportes": "Universitario"
         };
 
         let homeNameMapped = manualMap[homeName.toLowerCase().trim()] || homeName;

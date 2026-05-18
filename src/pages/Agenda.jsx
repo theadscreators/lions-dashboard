@@ -97,10 +97,20 @@ export function Agenda({ t, paises = [] }) {
   };
 
   // Logic: Grouping and Filtering
+  const [viewFilter, setViewFilter] = useState("TODOS"); // "TODOS" | "PROXIMOS" | "PREVIOS"
+
   const filteredMatches = matches.filter(m => {
     const countryCode = m.home_club?.leagues?.countries?.code?.toLowerCase();
     if (selectedCountry !== "all" && countryCode !== selectedCountry.toLowerCase()) return false;
     if (homeOnly && !m.home_club_id) return false;
+    
+    const d = new Date(m.match_date);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (viewFilter === "PREVIOS" && diff >= 0) return false;
+    if (viewFilter === "PROXIMOS" && diff < 0) return false;
+
     return true;
   });
 
@@ -147,8 +157,14 @@ export function Agenda({ t, paises = [] }) {
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, overflow: "hidden" }}>
+            <button onClick={() => setViewFilter("PREVIOS")} style={{ padding: "10px 16px", background: viewFilter === "PREVIOS" ? `${t.accent}15` : "transparent", color: viewFilter === "PREVIOS" ? t.accent : t.muted, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 11 }}>PREVIOS</button>
+            <button onClick={() => setViewFilter("TODOS")} style={{ padding: "10px 16px", background: viewFilter === "TODOS" ? `${t.accent}15` : "transparent", color: viewFilter === "TODOS" ? t.accent : t.muted, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 11 }}>TODOS</button>
+            <button onClick={() => setViewFilter("PROXIMOS")} style={{ padding: "10px 16px", background: viewFilter === "PROXIMOS" ? `${t.accent}15` : "transparent", color: viewFilter === "PROXIMOS" ? t.accent : t.muted, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 11 }}>PRÓXIMOS</button>
+          </div>
+          
           <button onClick={() => setHomeOnly(!homeOnly)} style={{ padding: "10px 16px", borderRadius: 10, background: homeOnly ? `${t.accent}15` : t.card, color: homeOnly ? t.accent : t.muted, border: `1px solid ${homeOnly ? t.accent : t.border}`, cursor: "pointer", fontWeight: 800, fontSize: 12 }}>
-            {homeOnly ? "SOLO LOCAL" : "TODOS"}
+            {homeOnly ? "SOLO LOCAL" : "TODOS LOCALES"}
           </button>
           <button onClick={() => setShowAddMatch(true)} style={{ padding: "10px 16px", borderRadius: 10, background: t.lions, color: "#fff", border: "none", cursor: "pointer", fontWeight: 800, fontSize: 12 }}>+ Añadir</button>
         </div>
@@ -175,9 +191,16 @@ export function Agenda({ t, paises = [] }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {mlist.map(m => {
                   const status = getStatusInfo(m);
-                  const flag = m.flag_emoji || "⚽";
-                  const leagueLabel = m.league_name || "";
-                  const stats = calcStats(m.home_club?.clients || []);
+                  const flag = m.country_flag || "⚽";
+                  const leagueLabel = m.league_name || "Liga";
+                  const stats = calcStats(m.home_club?.clientes || []);
+                  
+                  // Format round correctly
+                  let formattedRound = null;
+                  if (m.round_name) {
+                    const r = m.round_name;
+                    formattedRound = `${leagueLabel} - ${/^\d+$/.test(r) ? 'Jornada ' + r : r}`;
+                  }
                   
                   return (
                     <div key={m.id} style={{ 
@@ -187,7 +210,7 @@ export function Agenda({ t, paises = [] }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 200 }}>
                         <div style={{ textAlign: "center", minWidth: 80 }}>
                           <div style={{ fontSize: 16, fontWeight: 900, color: t.text }}>{format(new Date(m.match_date), 'HH:mm')}hs</div>
-                          {m.round_name && <div style={{ fontSize: 9, fontWeight: 700, color: t.muted, marginTop: 4 }}>{m.round_name}</div>}
+                          {formattedRound && <div style={{ fontSize: 9, fontWeight: 700, color: t.muted, marginTop: 4 }}>{formattedRound}</div>}
                         </div>
                         <div style={{ width: 1, height: 40, background: t.border }} />
                         <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingLeft: 12 }}>

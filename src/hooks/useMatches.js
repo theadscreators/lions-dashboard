@@ -31,7 +31,7 @@ export function useMatches(clubId = null, ready = true) {
           leagues(id, name, countries(id, name, flag_emoji, code)),
           home_club:clubs!home_club_id(
             id, name, logo_url, 
-            clients(*),
+            clientes(*),
             leagues(id, name, countries(id, name, flag_emoji, code))
           ),
           away_club:clubs!away_club_id(id, name, logo_url)
@@ -80,7 +80,7 @@ export function useMatches(clubId = null, ready = true) {
         const hasProdConfirmed = matchEvents.some(e => e.event_type === 'producer_confirmed');
         const hasClubConfirmed = matchEvents.some(e => e.event_type === 'club_confirmed');
 
-        if (hasDelivered) status = 'delivered';
+        if (m.status === 'delivered' || hasDelivered) status = 'delivered';
         else if (hasApproved) status = 'approved';
         else if (hasPlaylist) status = 'playlist_ready';
         else if (hasProdConfirmed && hasClubConfirmed) status = 'all_confirmed';
@@ -103,7 +103,7 @@ export function useMatches(clubId = null, ready = true) {
         return {
           ...m,
           current_status: status,
-          playlist_url: matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
+          playlist_url: m.playlist_url || matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
           events: matchEvents,
           // Flattened data for easier access
           country_flag: flag,
