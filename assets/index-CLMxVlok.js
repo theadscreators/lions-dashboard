@@ -72,7 +72,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           leagues(id, name, countries(id, name, flag_emoji, code)),
           home_club:clubs!home_club_id(
             id, name, logo_url, 
-            clientes(*),
+            clientes:clients(*),
             leagues(id, name, countries(id, name, flag_emoji, code))
           ),
           away_club:clubs!away_club_id(id, name, logo_url)
