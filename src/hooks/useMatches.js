@@ -35,6 +35,7 @@ export function useMatches(clubId = null, ready = true) {
           ),
           away_club:clubs!away_club_id(id, name, logo_url)
         `)
+        .not("home_club_id", "is", null)
         .gte("match_date", pastLimit.toISOString())
         .lte("match_date", futureLimit.toISOString())
         .order("match_date", { ascending: true })
