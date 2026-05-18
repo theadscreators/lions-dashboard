@@ -38,7 +38,7 @@ export function Agenda({ t, paises = [] }) {
   const [activeUpload, setActiveUpload] = useState(null);
   const [showAddMatch, setShowAddMatch] = useState(false);
   const [homeOnly, setHomeOnly] = useState(true);
-  const [viewFilter, setViewFilter] = useState("TODOS"); // "TODOS" | "PROXIMOS" | "PREVIOS"
+  const [viewFilter, setViewFilter] = useState("PROXIMOS"); // "TODOS" | "PROXIMOS" | "PREVIOS"
 
   
   const myClubId = profile?.club_ids?.[0] || null;
@@ -116,18 +116,31 @@ export function Agenda({ t, paises = [] }) {
     return true;
   });
 
-  const getGroup = (dateStr) => {
-    const d = new Date(dateStr);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const diff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff < 0) return "PASADOS";
-    if (diff === 0) return "HOY";
-    if (diff === 1) return "MAÑANA";
-    return "PRÓXIMOS";
+  const getGroupKey = (dateStr) => {
+    return format(new Date(dateStr), "yyyy-MM-dd");
   };
 
-  const groups = { "HOY": [], "MAÑANA": [], "PRÓXIMOS": [], "PASADOS": [] };
-  filteredMatches.forEach(m => groups[getGroup(m.match_date)].push(m));
+  const formatGroupName = (dateKey) => {
+    const d = new Date(dateKey + "T12:00:00"); // Avoid timezone issues
+    let label = format(d, "EEEE d 'de' MMMM", { locale: es });
+    label = label.charAt(0).toUpperCase() + label.slice(1);
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 0) label += " (Hoy)";
+    if (diff === 1) label += " (Mañana)";
+    return label;
+  };
+
+  const groups = {};
+  filteredMatches.forEach(m => {
+    const key = getGroupKey(m.match_date);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(m);
+  });
+
+  // Sort chronological
+  const sortedKeys = Object.keys(groups).sort((a, b) => new Date(a) - new Date(b));
 
   return (
     <div style={{ fontFamily: FONT, animation: "fadeIn 0.3s" }}>
@@ -180,13 +193,14 @@ export function Agenda({ t, paises = [] }) {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-        {Object.entries(groups).map(([name, mlist]) => {
+        {sortedKeys.map(key => {
+          const mlist = groups[key];
           if (mlist.length === 0) return null;
           return (
-            <div key={name}>
+            <div key={key}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                 <div style={{ height: 2, flex: 1, background: `linear-gradient(to right, ${t.border}, transparent)` }} />
-                <span style={{ fontSize: 12, fontWeight: 900, color: t.muted, letterSpacing: 2 }}>{name}</span>
+                <span style={{ fontSize: 12, fontWeight: 900, color: t.muted, letterSpacing: 2, textTransform: "uppercase" }}>{formatGroupName(key)}</span>
                 <div style={{ height: 2, flex: 1, background: `linear-gradient(to left, ${t.border}, transparent)` }} />
               </div>
 

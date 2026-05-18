@@ -75,6 +75,10 @@ async function syncFotMob() {
       }
 
       const data = await res.json();
+      if (!data) {
+        console.error(`   ❌ Datos vacíos devueltos para la liga ${league.name}`);
+        continue;
+      }
       
       // DEBUG: Ver qué nos devuelve FotMob exactamente
       console.log(`🔍 [DEBUG] Estructura de la liga ${league.name}:`, Object.keys(data).join(", "));
@@ -83,7 +87,7 @@ async function syncFotMob() {
       let fixtures = [];
       
       if (data.fixtures) {
-        console.log(`🔍 [DEBUG] Contenido de fixtures (${league.name}):`, typeof data.fixtures === 'object' ? Object.keys(data.fixtures).join(", ") : "es un string/otro");
+        console.log(`🔍 [DEBUG] Contenido de fixtures (${league.name}):`, (typeof data.fixtures === 'object' && data.fixtures !== null) ? Object.keys(data.fixtures).join(", ") : "es un string/otro");
         
         if (Array.isArray(data.fixtures)) {
           fixtures = data.fixtures;
@@ -119,9 +123,10 @@ async function syncFotMob() {
           "deportes limache": "Dep. Limache",
           "u. catolica": "Universidad Catolica",
           "universidad catolica": "U. Católica",
-          "universidad de concepcion": "Universidad de Concepcion",
-          "u. de concepcion": "Universidad de Concepcion",
-          "univ. concepcion": "Universidad de Concepcion",
+          "universidad de concepcion": "U. de Concepción",
+          "u. de concepcion": "U. de Concepción",
+          "univ. concepcion": "U. de Concepción",
+          "deportes concepcion": "Dep. Concepción",
           "everton cd": "Everton",
           "csd macara": "Macará",
           "universitario de deportes": "Universitario"
@@ -179,7 +184,7 @@ async function syncFotMob() {
       }
       console.log(`   ✅ Sincronizados ${synced} partidos.`);
     } catch (err) {
-      console.error(`   ❌ Error en liga:`, err.message);
+      console.error(`   ❌ Error en liga:`, err.stack);
     }
   }
   console.log("\n🚀 Sincronización FotMob finalizada.");
