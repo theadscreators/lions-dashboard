@@ -38,6 +38,8 @@ export function Agenda({ t, paises = [] }) {
   const [activeUpload, setActiveUpload] = useState(null);
   const [showAddMatch, setShowAddMatch] = useState(false);
   const [homeOnly, setHomeOnly] = useState(true);
+  const [viewFilter, setViewFilter] = useState("TODOS"); // "TODOS" | "PROXIMOS" | "PREVIOS"
+
   
   const myClubId = profile?.club_ids?.[0] || null;
   const { matches, loading, addMatchEvent, addMatch } = useMatches(
@@ -97,7 +99,7 @@ export function Agenda({ t, paises = [] }) {
   };
 
   // Logic: Grouping and Filtering
-  const [viewFilter, setViewFilter] = useState("TODOS"); // "TODOS" | "PROXIMOS" | "PREVIOS"
+  // Logic: Grouping and Filtering
 
   const filteredMatches = matches.filter(m => {
     const countryCode = m.home_club?.leagues?.countries?.code?.toLowerCase();
