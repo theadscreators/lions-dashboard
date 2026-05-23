@@ -44,13 +44,24 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
       const homeLogo = match.display_home_logo;
       const awayLogo = match.display_away_logo;
 
-      // 1. Partido < 72hs + playlist no subida -> Urgente (Solo Admin/Producer)
-      if (hoursUntil <= 72 && hoursUntil > 0 && match.current_status !== 'playlist_ready' && match.current_status !== 'approved' && match.current_status !== 'delivered') {
+      // 1. Partido < 48hs + playlist no subida -> Urgente dinámica (Solo Admin/Producer)
+      if (hoursUntil <= 48 && hoursUntil > 0 && match.current_status !== 'playlist_ready' && match.current_status !== 'approved' && match.current_status !== 'delivered') {
         if (profile.role === 'admin' || profile.role === 'producer') {
+          let severity = 'success'; // Green (> 24hs)
+          let title = `Playlist pendiente a ${hoursUntil}hs del partido`;
+          
+          if (hoursUntil <= 12) {
+            severity = 'urgent'; // Red (< 12hs)
+            title = `🚨 ALERTA MÁXIMA: Playlist pendiente a ${hoursUntil}hs`;
+          } else if (hoursUntil <= 24) {
+            severity = 'warning'; // Yellow (< 24hs)
+            title = `Playlist pendiente a ${hoursUntil}hs`;
+          }
+
           newAlerts.push({
             id: `urgent_playlist_${match.id}`,
-            type: 'urgent',
-            title: `Playlist pendiente a ${hoursUntil}hs del partido`,
+            type: severity,
+            title: title,
             description: `${homeName} vs ${awayName}`,
             homeLogo, awayLogo,
             actionLink: '/agenda'
@@ -58,13 +69,13 @@ export function useAlerts(profile, matches = [], requests = [], paises = []) {
         }
       }
 
-      // 2. Partido < 48hs + sin confirmación club -> High (Para Club y Admins)
+      // 2. Partido < 48hs + sin confirmación club -> Alerta Máxima Roja (Para Club y Admins)
       const isClubConfirmed = match.events?.some(e => e.event_type === 'club_confirmed');
       if (hoursUntil <= 48 && hoursUntil > 0 && !isClubConfirmed) {
         if (profile.role === 'admin' || profile.role === 'producer' || profile.role === 'club_staff') {
           newAlerts.push({
             id: `high_unconfirmed_${match.id}`,
-            type: 'warning',
+            type: 'urgent', // Red of maximum alert
             title: `Falta confirmación a ${hoursUntil}hs`,
             description: `El club debe confirmar la pauta para ${homeName} vs ${awayName}`,
             homeLogo, awayLogo,

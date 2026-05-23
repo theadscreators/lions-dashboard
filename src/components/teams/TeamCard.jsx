@@ -11,7 +11,7 @@ export function TeamCard({ equipo, t, onOpen }) {
   const sl = statusLabel(status, stats.disponibles);
   const disabled = status === "futuro";
   const isSpecial = status === "vallas" || status === "pendiente";
-  const allLions = [...equipo.clientes].filter(c => c.categoria === "LIONS").sort((a, b) => b.minutos - a.minutos);
+  const allLions = [...equipo.clientes].filter(c => c.categoria === "LIONS" && ((c.minutos || 0) + (c.bonificados || 0)) > 0).sort((a, b) => b.minutos - a.minutos);
 
   return (
     <div style={{ background: t.card, border: `1.5px solid ${t.border}`, borderRadius: 14, overflow: "hidden", opacity: disabled ? 0.3 : 1, transition: "all 0.2s", boxShadow: t.shadow, fontFamily: FONT, cursor: disabled ? "default" : "pointer" }} onClick={() => !disabled && !isSpecial && onOpen()} onMouseOver={e => { if (!disabled) e.currentTarget.style.borderColor = t.accent + "60"; }} onMouseOut={e => { e.currentTarget.style.borderColor = t.border; }}>

@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAlerts } from "../../hooks/useAlerts";
 import { FONT } from "../../theme/theme";
-import { AlertCircle, AlertTriangle, Info, Zap, ChevronRight } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Zap, ChevronRight, Check } from "lucide-react";
 
 /**
  * DashboardAlerts displays contextual alerts based on match status, requests, etc.
@@ -23,6 +23,7 @@ export function DashboardAlerts({ t, profile, matches = [], requests = [], paise
     switch (type) {
       case 'urgent': return { bg: `${t.accent}15`, color: t.accent, icon: <AlertCircle size={18} /> };
       case 'warning': return { bg: `${t.amber}15`, color: t.amber, icon: <AlertTriangle size={18} /> };
+      case 'success': return { bg: `${t.green}15`, color: t.green, icon: <Check size={18} /> };
       case 'opportunity': return { bg: `${t.green}15`, color: t.green, icon: <Zap size={18} /> };
       case 'info': return { bg: `${t.lions}15`, color: t.lions, icon: <Info size={18} /> };
       default: return { bg: `${t.muted}15`, color: t.text, icon: <Info size={18} /> };

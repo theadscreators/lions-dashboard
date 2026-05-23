@@ -44,6 +44,16 @@ export function useClubs(ready = false) {
       if (clubsRes.error) throw clubsRes.error;
       if (clientsRes.error) throw clientsRes.error;
 
+      if (countriesRes.data?.length === 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.warn("Detected expired session. Redirecting to login...");
+          await supabase.auth.signOut();
+          window.location.reload();
+          return;
+        }
+      }
+
       setCountries(countriesRes.data || []);
       setLeagues(leaguesRes.data || []);
       setClubs(clubsRes.data || []);

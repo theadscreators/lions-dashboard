@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 
-export function useAuth() {
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ export function useAuth() {
       setProfile(profileData);
       return profileData;
     }
-    return null; // ← explicit null, error already logged by caller's .catch()
+    return null;
   }, []);
 
   // Auth initialization
@@ -34,15 +36,11 @@ export function useAuth() {
 
     const initialize = async () => {
       try {
-        // Race getSession against a 3-second timeout.
-        // Why: If there's an expired token in localStorage, the Supabase client
-        // tries to refresh it via network. On slow connections or cold-start
-        // of the Supabase project, this can hang for 10-30 seconds.
-        // We'd rather show the Login screen and let onAuthStateChange
-        // pick up the refreshed session in the background.
+        // Race getSession against an 8-second timeout.
+        // Prevents permanent hang while giving enough time to cold-start DB.
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((resolve) =>
-          setTimeout(() => resolve({ data: { session: null }, timedOut: true }), 3000)
+          setTimeout(() => resolve({ data: { session: null }, timedOut: true }), 8000)
         );
 
         const result = await Promise.race([sessionPromise, timeoutPromise]);
@@ -50,7 +48,7 @@ export function useAuth() {
         if (!active) return;
 
         if (result.timedOut) {
-          console.warn("getSession timed out after 3s — showing Login. onAuthStateChange will restore session if token refreshes.");
+          console.warn("getSession timed out after 8s — showing Login. onAuthStateChange will restore session if token refreshes.");
           setLoading(false);
           return;
         }
@@ -109,14 +107,10 @@ export function useAuth() {
 
   // Logout
   const logout = async () => {
-    // Immediately clear state so the UI shows login
     setUser(null);
     setProfile(null);
     setLoading(false);
 
-    // Clear Supabase session from localStorage to prevent onAuthStateChange
-    // from restoring a stale session when Supabase is unreachable (cold start).
-    // The storage key follows the pattern: sb-<project-ref>-auth-token
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
         localStorage.removeItem(key);
@@ -126,19 +120,16 @@ export function useAuth() {
     try {
       await supabase.auth.signOut();
     } catch (err) {
-      // signOut may fail if Supabase is unreachable — that's OK,
-      // we already cleared the local state above.
-      console.warn("signOut network call failed (Supabase may be unreachable):", err.message);
+      console.warn("signOut network call failed:", err.message);
     }
   };
 
-  // Derived state
   const role = profile?.role || "pending";
   const isAdmin = role === "admin";
   const isProducer = role === "producer";
   const isStaff = role === "admin" || role === "producer";
 
-  return {
+  const value = {
     user,
     profile,
     role,
@@ -149,4 +140,14 @@ export function useAuth() {
     login,
     logout,
   };
+
+  return React.createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

@@ -23,7 +23,7 @@ export function TopNav({ t, auth }) {
     tabs = [
       { to: "/", label: "PANEL" },
       { to: "/agenda", label: "AGENDA" },
-      { to: "/ligas", label: "LIGAS" },
+      { to: "/ligas", label: "EQUIPOS" },
       { to: "/clientes", label: "CLIENTES" },
       { to: "/ajustes", label: "AJUSTES" },
     ];

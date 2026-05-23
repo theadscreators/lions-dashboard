@@ -19,10 +19,9 @@ export function Ligas({ pais, t, auth, onSelectTeam, addClub }) {
     const clubIds = pais.equipos.map(e => e.id);
     const ligaEntries = entries.filter(e => clubIds.includes(e.club_id));
 
-    if (ligaEntries.length === 0) return alert("No hay datos para exportar de esta liga.");
-    
-    const headers = ["Fecha", "Club", "Tarea", "Descripción", "Monto/Min", "Estado"];
-    const rows = ligaEntries.map(e => [
+    // 1. Prepare Work Log
+    const logHeaders = ["Fecha Tarea", "Club", "Tipo Tarea", "Descripción", "Monto", "Estado Tarea"];
+    const logRows = ligaEntries.map(e => [
       new Date(e.created_at).toLocaleDateString(),
       e.club?.name || "N/A",
       e.task_type,
@@ -31,7 +30,36 @@ export function Ligas({ pais, t, auth, onSelectTeam, addClub }) {
       e.status
     ]);
 
-    const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+    // 2. Prepare Minutes & Brands Allocation
+    const minutesHeaders = ["Club", "Categoría Marca", "Nombre Marca", "Minutos Asignados", "Minutos Bonificados", "Estado Club"];
+    const minutesRows = pais.equipos.flatMap(eq => 
+      eq.clientes.map(cl => [
+        eq.nombre,
+        cl.categoria,
+        cl.nombre,
+        cl.minutos,
+        cl.bonificados,
+        eq.estado
+      ])
+    );
+
+    // Escape CSV values
+    const csvEscape = (val) => {
+      const str = String(val === null || val === undefined ? '' : val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvLines = [
+      `=== HISTORIAL DE TRABAJO (WORK LOG) - ${pais.nombre.toUpperCase()} ===`,
+      logHeaders.map(csvEscape).join(","),
+      ...logRows.map(row => row.map(csvEscape).join(",")),
+      "",
+      `=== DISTRIBUCIÓN DE MINUTOS COMERCIALES Y MARCAS - ${pais.nombre.toUpperCase()} ===`,
+      minutesHeaders.map(csvEscape).join(","),
+      ...minutesRows.map(row => row.map(csvEscape).join(","))
+    ];
+
+    const csvContent = "\uFEFF" + csvLines.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);

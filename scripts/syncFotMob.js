@@ -121,15 +121,25 @@ async function syncFotMob() {
         const manualMap = {
           "limache": "Dep. Limache",
           "deportes limache": "Dep. Limache",
-          "u. catolica": "Universidad Catolica",
-          "universidad catolica": "U. Católica",
           "universidad de concepcion": "U. de Concepción",
           "u. de concepcion": "U. de Concepción",
           "univ. concepcion": "U. de Concepción",
           "deportes concepcion": "Dep. Concepción",
           "everton cd": "Everton",
           "csd macara": "Macará",
-          "universitario de deportes": "Universitario"
+          "deportivo cuenca": "Deportivo Cuenca",
+          "tecnico universitario": "T. Universitario",
+          // NO mapear "universidad catolica" aquí — se resuelve por fotmob_id (Chile=6458, Ecuador=113053)
+          "universitario de deportes": "Universitario",
+          "adc juan pablo ii": "Juan Pablo II",
+          "juan pablo ii": "Juan Pablo II",
+          "alianza atletico": "Alianza Atlético Sullana",
+          "alianza atletico sullana": "Alianza Atlético Sullana",
+          "alianza atlético": "Alianza Atlético Sullana",
+          "alianza atlético sullana": "Alianza Atlético Sullana",
+          "cd ut cajamarca": "FC Cajamarca",
+          "ut cajamarca": "FC Cajamarca",
+          "utc": "FC Cajamarca"
         };
 
         let homeNameMapped = manualMap[homeName.toLowerCase().trim()] || homeName;

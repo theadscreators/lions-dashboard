@@ -10,7 +10,7 @@ export function TeamRow({ equipo, t, onOpen }) {
   const sl = statusLabel(status, stats.disponibles);
   const disabled = status === "futuro";
   const isSpecial = status === "vallas" || status === "pendiente";
-  const allLions = [...equipo.clientes].filter(c => c.categoria === "LIONS").sort((a, b) => b.minutos - a.minutos);
+  const allLions = [...equipo.clientes].filter(c => c.categoria === "LIONS" && ((c.minutos || 0) + (c.bonificados || 0)) > 0).sort((a, b) => b.minutos - a.minutos);
 
   return (
     <div onClick={() => !disabled && !isSpecial && onOpen()} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 14px", opacity: disabled ? 0.3 : 1, cursor: disabled ? "default" : "pointer", fontFamily: FONT, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }} onMouseOver={e => { if (!disabled) e.currentTarget.style.borderColor = t.accent + "60"; }} onMouseOut={e => { e.currentTarget.style.borderColor = t.border; }}>

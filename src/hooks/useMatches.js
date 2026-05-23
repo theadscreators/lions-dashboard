@@ -30,7 +30,7 @@ export function useMatches(clubId = null, ready = true) {
           *,
           leagues(id, name, countries(id, name, flag_emoji, code)),
           home_club:clubs!home_club_id(
-            id, name, logo_url, 
+            id, name, logo_url, status,
             clientes:clients(*),
             leagues(id, name, countries(id, name, flag_emoji, code))
           ),
@@ -99,9 +99,24 @@ export function useMatches(clubId = null, ready = true) {
           flag = flagMap[country.code.toLowerCase()];
         }
         flag = flag || "⚽";
+
+        let home_club = m.home_club;
+        if (home_club && home_club.clientes) {
+          home_club = {
+            ...home_club,
+            clientes: home_club.clientes.map(cl => ({
+              id: cl.id,
+              categoria: cl.category,
+              nombre: cl.name,
+              minutos: Number(cl.minutes) || 0,
+              bonificados: Number(cl.bonified) || 0
+            }))
+          };
+        }
         
         return {
           ...m,
+          home_club,
           current_status: status,
           playlist_url: m.playlist_url || matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
           events: matchEvents,
@@ -109,9 +124,9 @@ export function useMatches(clubId = null, ready = true) {
           country_flag: flag,
           country_code: country?.code || "",
           league_name: league?.name || "Liga",
-          display_home_name: m.home_club?.name || m.home_team_name || "Equipo Local",
+          display_home_name: home_club?.name || m.home_team_name || "Equipo Local",
           display_away_name: m.away_club?.name || m.away_team_name || "Equipo Visitante",
-          display_home_logo: m.home_club?.logo_url || m.home_team_logo,
+          display_home_logo: home_club?.logo_url || m.home_team_logo,
           display_away_logo: m.away_club?.logo_url || m.away_team_logo
         };
       });
@@ -154,7 +169,7 @@ export function useMatches(clubId = null, ready = true) {
     }
   };
 
-  const addMatch = async (homeClubId, awayTeamName, matchDate, venue, operationalNotes = "") => {
+  const addMatch = async (homeClubId, awayTeamName, matchDate, venue, operationalNotes = "", pautaOverride = "default") => {
     try {
       const { error } = await supabase.from("matches").insert({
         home_club_id: homeClubId,
@@ -162,7 +177,8 @@ export function useMatches(clubId = null, ready = true) {
         match_date: matchDate,
         venue: venue || null,
         operational_notes: operationalNotes || null,
-        current_status: "scheduled"
+        current_status: "scheduled",
+        pauta_override: pautaOverride
       });
       if (error) throw error;
       await fetchMatches();
@@ -173,5 +189,89 @@ export function useMatches(clubId = null, ready = true) {
     }
   };
 
-  return { matches, loading, error, refetch: fetchMatches, addMatchEvent, addMatch };
+  const updateMatch = async (matchId, updates) => {
+    try {
+      const { error } = await supabase
+        .from("matches")
+        .update(updates)
+        .eq("id", matchId);
+      if (error) throw error;
+
+      if (updates.pauta_override === 'vallas_led' && updates.home_club_id) {
+        const { error: clubErr } = await supabase
+          .from("clubs")
+          .update({ status: 'activo' })
+          .eq("id", updates.home_club_id);
+        if (clubErr) console.error("Error updating club status:", clubErr);
+      }
+
+      await fetchMatches();
+      return true;
+    } catch (err) {
+      console.error("Error updating match:", err);
+      return false;
+    }
+  };
+
+  const updateClubClients = async (clubId, newClients) => {
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("club_id", clubId);
+      if (fetchErr) throw fetchErr;
+
+      const currentIds = (current || []).map(c => c.id);
+      const newIds = newClients.filter(c => c.id).map(c => c.id);
+      const deletedIds = currentIds.filter(id => !newIds.includes(id));
+
+      if (deletedIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from("clients")
+          .delete()
+          .in("id", deletedIds);
+        if (delErr) throw delErr;
+      }
+
+      const toInsert = newClients.filter(c => !c.id).map(c => ({
+        club_id: clubId,
+        name: c.nombre,
+        category: c.categoria.toUpperCase(),
+        minutes: Number(c.minutos) || 0,
+        bonified: Number(c.bonificados) || 0
+      }));
+
+      const toUpdate = newClients.filter(c => c.id).map(c => ({
+        id: c.id,
+        club_id: clubId,
+        name: c.nombre,
+        category: c.categoria.toUpperCase(),
+        minutes: Number(c.minutos) || 0,
+        bonified: Number(c.bonificados) || 0
+      }));
+
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase
+          .from("clients")
+          .insert(toInsert);
+        if (insErr) throw insErr;
+      }
+
+      if (toUpdate.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from("clients")
+          .upsert(toUpdate);
+        if (upsertErr) throw upsertErr;
+      }
+
+      await fetchMatches();
+      return true;
+    } catch (err) {
+      console.error("Error updating club clients:", err?.message || err?.details || err);
+      return false;
+    }
+  };
+
+  return { matches, loading, error, refetch: fetchMatches, addMatchEvent, addMatch, updateMatch, updateClubClients };
 }
+

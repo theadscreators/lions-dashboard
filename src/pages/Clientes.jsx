@@ -145,7 +145,7 @@ export function Clientes({ t, paises = [] }) {
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px dashed ${t.border}`, animation: "fadeIn 0.2s" }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: t.muted, marginBottom: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>Desglose por Club</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {inv.equipos.sort((a,b) => b.minutos - a.minutos).map((e, j) => (
+                    {[...inv.equipos].sort((a,b) => b.minutos - a.minutos).map((e, j) => (
                       <div key={j} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: `${t.muted}05`, borderRadius: 8, border: `1px solid ${t.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 10, opacity: 0.6 }}>{e.liga.toUpperCase()}</span>

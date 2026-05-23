@@ -46,9 +46,15 @@ export function PublicMatch({ t }) {
   const awayLogo = match.away_club?.logo_url || match.away_team_logo;
   const dateStr = format(new Date(match.match_date), "EEEE d 'de' MMMM, yyyy - HH:mm'hs'", { locale: es });
 
-  const clients = match.home_club?.clients || [];
+  const rawClients = match.home_club?.clients || [];
+  const clients = rawClients.map(cl => ({
+    categoria: cl.category,
+    nombre: cl.name,
+    minutos: Number(cl.minutes) || 0,
+    bonificados: Number(cl.bonified) || 0
+  }));
   const stats = calcStats(clients);
-  const isLionsTeam = clients.some(c => c.category === 'LIONS');
+  const isLionsTeam = clients.some(c => c.categoria === 'LIONS');
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#fff", fontFamily: FONT, padding: "40px 20px" }}>

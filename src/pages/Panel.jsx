@@ -12,13 +12,24 @@ import {
   Globe,
   ChevronRight,
   Clock,
-  Download
+  Download,
+  Bell,
+  X
 } from "lucide-react";
 import { StackedBar } from "../components/ui/StackedBar";
 import { DashboardAlerts } from "../components/ui/DashboardAlerts";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useMatches } from "../hooks/useMatches";
 import { useWorkLog } from "../hooks/useWorkLog";
+import { useAlerts } from "../hooks/useAlerts";
+
+const BASE = import.meta.env.BASE_URL || '/';
+const FLAG_IMGS = {
+  cl: `${BASE}flags/cl.svg`,
+  ec: `${BASE}flags/ec.svg`,
+  pe: `${BASE}flags/pe.svg`,
+  py: `${BASE}flags/py.svg`,
+};
 
 export function Panel({ t, auth, paises }) {
   const { role, profile, isAdmin, isProducer, isStaff } = auth;
@@ -47,17 +58,18 @@ export function Panel({ t, auth, paises }) {
   
   if (role === 'operator') return <Navigate to="/agenda" replace />;
 
-  return <ClubDashboard t={t} auth={auth} paises={paises} />;
+  return <ClubDashboard t={t} auth={auth} paises={paises} matches={matches} />;
 }
 
 function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], matchesLoading = false }) {
   const { entries, loading: entriesLoading } = useWorkLog();
+  const { alerts } = useAlerts(profile, matches, [], paises);
+  const [showNotifications, setShowNotifications] = React.useState(false);
 
   const exportGlobalBackup = () => {
-    if (entries.length === 0) return alert("No hay datos para exportar.");
-    
-    const headers = ["Fecha", "Club", "Tarea", "Descripción", "Monto/Min", "Estado", "Tipo Facturación"];
-    const rows = entries.map(e => [
+    // 1. Prepare Work Log
+    const logHeaders = ["Fecha Tarea", "Club", "Tipo Tarea", "Descripción", "Monto", "Estado Tarea", "Facturación"];
+    const logRows = entries.map(e => [
       new Date(e.created_at).toLocaleDateString(),
       e.club?.name || "Global",
       e.task_type,
@@ -67,7 +79,39 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
       e.billing_type
     ]);
 
-    const csvContent = [headers, ...rows].map(r => r.join(",")).join("\n");
+    // 2. Prepare Minutes & Brands Allocation
+    const minutesHeaders = ["País", "Club", "Categoría Marca", "Nombre Marca", "Minutos Asignados", "Minutos Bonificados", "Estado Club"];
+    const minutesRows = paises.flatMap(p => 
+      p.equipos.flatMap(eq => 
+        eq.clientes.map(cl => [
+          p.nombre,
+          eq.nombre,
+          cl.categoria,
+          cl.nombre,
+          cl.minutos,
+          cl.bonificados,
+          eq.estado
+        ])
+      )
+    );
+
+    // Escape CSV values
+    const csvEscape = (val) => {
+      const str = String(val === null || val === undefined ? '' : val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvLines = [
+      "=== HISTORIAL DE TRABAJO (WORK LOG) ===",
+      logHeaders.map(csvEscape).join(","),
+      ...logRows.map(row => row.map(csvEscape).join(",")),
+      "",
+      "=== DISTRIBUCIÓN DE MINUTOS COMERCIALES Y MARCAS ===",
+      minutesHeaders.map(csvEscape).join(","),
+      ...minutesRows.map(row => row.map(csvEscape).join(","))
+    ];
+
+    const csvContent = "\uFEFF" + csvLines.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -86,17 +130,136 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
     .slice(0, 3);
 
   return (
-    <div style={{ fontFamily: FONT, animation: "fadeIn 0.4s" }}>
+    <div style={{ fontFamily: FONT, animation: "fadeIn 0.4s", position: "relative" }}>
       {/* Welcome */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>CENTRO OPERATIVO</div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Hola, {profile?.name?.split(' ')[0] || 'Admin'} 👋🏼</h1>
-          <p style={{ color: t.muted, fontSize: 14, marginTop: 4 }}>Aquí tienes el resumen global de Lions para hoy.</p>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 32, position: "relative" }}>
+        
+        {/* Bell Button */}
+        <button
+          onClick={() => setShowNotifications(true)}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: 42,
+            height: 42,
+            borderRadius: "50%",
+            background: t.card,
+            border: `1px solid ${t.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: t.shadow,
+            color: alerts.length > 0 ? t.lions : t.text,
+            transition: "all 0.2s ease",
+            outline: "none"
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.transform = "scale(1.05)";
+            e.currentTarget.style.borderColor = t.accent;
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.borderColor = t.border;
+          }}
+          title="Notificaciones y Avisos"
+        >
+          <Bell size={18} fill={alerts.length > 0 ? `${t.lions}20` : "none"} />
+          {alerts.length > 0 && (
+            <span style={{
+              position: "absolute",
+              top: -2, right: -2,
+              background: t.lions,
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 900,
+              borderRadius: "50%",
+              width: 18, height: 18,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: `2px solid ${t.card}`,
+              boxShadow: "0 2px 5px rgba(0,0,0,0.2)"
+            }}>
+              {alerts.length}
+            </span>
+          )}
+        </button>
+
+        <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>CENTRO OPERATIVO</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Hola, {profile?.name?.split(' ')[0] || 'Admin'} 👋🏼</h1>
+        <p style={{ color: t.muted, fontSize: 14, marginTop: 4, marginBottom: 0 }}>Aquí tienes el resumen global de Lions para hoy.</p>
       </div>
 
-      <DashboardAlerts t={t} profile={profile} matches={matches} paises={paises} />
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.65)",
+          backdropFilter: "blur(6px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          animation: "fadeIn 0.2s ease-out"
+        }} onClick={() => setShowNotifications(false)}>
+          <div style={{
+            background: t.card,
+            border: `1px solid ${t.border}`,
+            borderRadius: 24,
+            width: "95%",
+            maxWidth: "500px",
+            maxHeight: "85vh",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+            overflow: "hidden"
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${t.border}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🔔</span>
+                <span style={{ fontSize: 16, fontWeight: 900, color: t.text }}>Últimos Avisos</span>
+              </div>
+              <button 
+                onClick={() => setShowNotifications(false)}
+                style={{
+                  background: `${t.muted}15`,
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 32, height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: t.text,
+                  transition: "all 0.15s"
+                }}
+                onMouseOver={e => e.currentTarget.style.background = `${t.muted}25`}
+                onMouseOut={e => e.currentTarget.style.background = `${t.muted}15`}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: 24, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+              {alerts.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: t.muted }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>¡Todo al día!</div>
+                  <div style={{ fontSize: 11, marginTop: 4 }}>No tienes alertas ni confirmaciones pendientes.</div>
+                </div>
+              ) : (
+                <DashboardAlerts t={t} profile={profile} matches={matches} paises={paises} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 24 }}>
@@ -186,7 +349,8 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
               return relevantMatches.map(m => {
                 const statusInfo = getStatusInfo(m, t);
                 const matchDate = new Date(m.match_date);
-                const flag = m.country_flag || "⚽";
+                const countryCode = m.country_code?.toLowerCase();
+                const flagSrc = FLAG_IMGS[countryCode];
                 const argTime = matchDate.toLocaleTimeString('en-US', { 
                   timeZone: 'America/Argentina/Buenos_Aires', 
                   hour: '2-digit', 
@@ -202,9 +366,19 @@ function AdminDashboard({ t, stats, occupancy, paises, profile, matches = [], ma
                         <span style={{ fontSize: 8, fontWeight: 700, color: t.muted }}>{matchDate.toLocaleString('es', { month: 'short' }).toUpperCase()}</span>
                       </div>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text }}>
-                          <span style={{ marginRight: 6 }}>{flag}</span>
-                          {m.home_club?.name} vs {m.away_club?.name || m.away_team_name}
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text, display: "flex", alignItems: "center", gap: 6 }}>
+                          {flagSrc ? (
+                            <img 
+                              src={flagSrc} 
+                              alt={m.country_code} 
+                              style={{ width: 15, height: 10, objectFit: "cover", borderRadius: 1.5, border: "1px solid #333", flexShrink: 0 }} 
+                            />
+                          ) : (
+                            <span style={{ fontSize: 10 }}>⚽</span>
+                          )}
+                          <span>
+                            {m.home_club?.name} vs {m.away_club?.name || m.away_team_name}
+                          </span>
                         </div>
                         <div style={{ fontSize: 9, color: t.muted }}>
                           {matchDate.getHours()}:{matchDate.getMinutes().toString().padStart(2, '0')}hs 
@@ -258,10 +432,12 @@ const getStatusInfo = (match, t) => {
   return { label: "PENDIENTE", color: t.lions };
 };
 
-function ClubDashboard({ t, auth, paises }) {
+function ClubDashboard({ t, auth, paises, matches = [] }) {
   const navigate = useNavigate();
   const myClubId = auth.profile?.club_ids?.[0]; // Simplified for now
   const club = paises.flatMap(p => p.equipos).find(e => e.id === myClubId);
+  const { alerts } = useAlerts(auth.profile, matches, [], paises);
+  const [showNotifications, setShowNotifications] = React.useState(false);
   
   if (!club) return (
     <div style={{ padding: 40, textAlign: "center", color: t.muted }}>
@@ -272,16 +448,135 @@ function ClubDashboard({ t, auth, paises }) {
   const stats = calcStats(club.clientes);
 
   return (
-    <div style={{ fontFamily: FONT, animation: "fadeIn 0.4s" }}>
-       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 16 }}>
-        <img src={club.logo} alt="" style={{ width: 60, height: 60, objectFit: "contain" }} />
-        <div>
-          <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>MI PANEL · {club.nombre.toUpperCase()}</div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Bienvenido, {auth.profile.name.split(' ')[0]}</h1>
-        </div>
+    <div style={{ fontFamily: FONT, animation: "fadeIn 0.4s", position: "relative" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 32, position: "relative" }}>
+        
+        {/* Bell Button */}
+        <button
+          onClick={() => setShowNotifications(true)}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: 42,
+            height: 42,
+            borderRadius: "50%",
+            background: t.card,
+            border: `1px solid ${t.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: t.shadow,
+            color: alerts.length > 0 ? t.lions : t.text,
+            transition: "all 0.2s ease",
+            outline: "none"
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.transform = "scale(1.05)";
+            e.currentTarget.style.borderColor = t.accent;
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.borderColor = t.border;
+          }}
+          title="Notificaciones y Avisos"
+        >
+          <Bell size={18} fill={alerts.length > 0 ? `${t.lions}20` : "none"} />
+          {alerts.length > 0 && (
+            <span style={{
+              position: "absolute",
+              top: -2, right: -2,
+              background: t.lions,
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 900,
+              borderRadius: "50%",
+              width: 18, height: 18,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: `2px solid ${t.card}`,
+              boxShadow: "0 2px 5px rgba(0,0,0,0.2)"
+            }}>
+              {alerts.length}
+            </span>
+          )}
+        </button>
+
+        <img src={club.logo} alt="" style={{ width: 64, height: 64, objectFit: "contain", marginBottom: 12 }} />
+        <div style={{ fontSize: 11, color: t.accent, fontWeight: 800, letterSpacing: 1.5, marginBottom: 4 }}>MI PANEL · {club.nombre.toUpperCase()}</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: t.text, margin: 0 }}>Bienvenido, {auth.profile.name.split(' ')[0]} 👋🏼</h1>
       </div>
 
-      <DashboardAlerts t={t} profile={auth.profile} paises={paises} />
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.65)",
+          backdropFilter: "blur(6px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          animation: "fadeIn 0.2s ease-out"
+        }} onClick={() => setShowNotifications(false)}>
+          <div style={{
+            background: t.card,
+            border: `1px solid ${t.border}`,
+            borderRadius: 24,
+            width: "95%",
+            maxWidth: "500px",
+            maxHeight: "85vh",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+            overflow: "hidden"
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${t.border}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🔔</span>
+                <span style={{ fontSize: 16, fontWeight: 900, color: t.text }}>Últimos Avisos</span>
+              </div>
+              <button 
+                onClick={() => setShowNotifications(false)}
+                style={{
+                  background: `${t.muted}15`,
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 32, height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: t.text,
+                  transition: "all 0.15s"
+                }}
+                onMouseOver={e => e.currentTarget.style.background = `${t.muted}25`}
+                onMouseOut={e => e.currentTarget.style.background = `${t.muted}15`}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: 24, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+              {alerts.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: t.muted }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>¡Todo al día!</div>
+                  <div style={{ fontSize: 11, marginTop: 4 }}>No tienes alertas ni confirmaciones pendientes.</div>
+                </div>
+              ) : (
+                <DashboardAlerts t={t} profile={auth.profile} matches={matches} paises={paises} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 20 }}>
         {/* Club status card */}
