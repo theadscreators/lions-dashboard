@@ -63,9 +63,11 @@ export function Agenda({ t, paises = [] }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [activeMinuteEditor, setActiveMinuteEditor] = useState(null);
 
-  const myClubId = profile?.club_ids?.[0] || null;
+  // Operators with assigned clubs see only their clubs; operators without assignments see everything
+  const myClubIds = profile?.club_ids || [];
+  const filterClubId = (isAdmin || isProducer) ? null : (myClubIds.length > 0 ? myClubIds[0] : null);
   const { matches, loading, addMatchEvent, addMatch, updateMatch, updateClubClients } = useMatches(
-    isAdmin || isProducer ? null : myClubId, !!user
+    filterClubId, !!user
   );
 
   if (loading) return <div style={{ color: t.muted, textAlign: "center", padding: 40, fontFamily: FONT }}>Cargando agenda...</div>;
@@ -301,7 +303,7 @@ export function Agenda({ t, paises = [] }) {
                       title={(isAdmin || isProducer) ? "Editar Minutos" : ""}
                     >
                       {status.icon}
-                      {status.label === 'CHEQUEO' ? 'CHEQUEAR' : status.label}
+                      {(isAdmin || isProducer) && status.label === 'CHEQUEO' ? 'CHEQUEAR' : status.label}
                     </div>
                   )}
                   {renderActions(m)}
@@ -381,7 +383,7 @@ export function Agenda({ t, paises = [] }) {
           <button onClick={()=>setHomeOnly(!homeOnly)} style={{padding:"6px 12px",borderRadius:8,background:homeOnly?`${t.accent}15`:t.card,color:homeOnly?t.accent:t.muted,border:`1px solid ${homeOnly?t.accent:t.border}`,cursor:"pointer",fontWeight:800,fontSize:10}}>
             {homeOnly?"LOCAL":"TODOS"}
           </button>
-          <button onClick={()=>setShowAddMatch(true)} style={{padding:"6px 12px",borderRadius:8,background:t.lions,color:"#fff",border:"none",cursor:"pointer",fontWeight:800,fontSize:10}}>+ Añadir</button>
+          {(isAdmin||isProducer) && <button onClick={()=>setShowAddMatch(true)} style={{padding:"6px 12px",borderRadius:8,background:t.lions,color:"#fff",border:"none",cursor:"pointer",fontWeight:800,fontSize:10}}>+ Añadir</button>}
         </div>
       </div>
 

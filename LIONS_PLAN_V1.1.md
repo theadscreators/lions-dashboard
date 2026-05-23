@@ -56,3 +56,14 @@ El sistema debe incentivar la venta mostrando claramente los **Minutos Disponibl
 *   [x] **6.1 Rediseño Visual:** Tarjetas, layouts y transiciones fluidas.
 *   [x] **6.2 Enfoque en Minutos:** Indicador de "MINUTOS LIBRES" resaltado de forma destacada y llamativa como la métrica principal.
 *   [x] **6.3 Indicadores de Estado Visuales:** Colores y badges reactivos al estado del partido.estados de los partidos: Pendiente (Gris/Naranja) -> En Proceso (Azul) -> Listo (Verde con acceso inmediato al link de descarga).
+
+---
+
+## 🔮 Etapa 7: Filtrado de Operadores por Club (FUTURO)
+
+> [!NOTE]
+> Actualmente los operadores ven todos los partidos en modo lectura. Esta etapa agrega la posibilidad de filtrar.
+
+*   [ ] **7.1 Asignación de Clubs desde Panel Admin:** Interfaz en Ajustes o Panel para que un Admin asigne uno o varios clubes a un operador específico via `user_club_assignments`.
+*   [ ] **7.2 Filtrado Automático en Agenda:** Si el operador tiene clubs asignados, la Agenda filtra automáticamente solo los partidos de esos equipos.
+*   [ ] **7.3 Multi-Club:** Soporte para operadores asignados a más de un club (filtro `.in()` en lugar de `.eq()`).
