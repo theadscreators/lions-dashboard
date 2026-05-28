@@ -132,8 +132,8 @@ export function Agenda({ t, paises = [] }) {
     const { current_status, events = [], playlist_url } = m;
     if (playlist_url || current_status === 'playlist_ready' || ['delivered','approved'].includes(current_status))
       return { label:"LISTO", color:t.green, icon:<CheckCircle size={12}/> };
-    if (events.some(e=>e.event_type==='club_confirmed') || events.some(e=>e.event_type==='producer_confirmed') || current_status==='chequeo')
-      return { label:"CHEQUEO", color:t.amber, icon:<Clock size={12}/> };
+    if (events.some(e=>e.event_type==='club_confirmed') || events.some(e=>e.event_type==='producer_confirmed') || current_status==='chequeo' || ['producer_confirmed','club_confirmed','all_confirmed'].includes(current_status))
+      return { label:"CHEQUEANDO", color:t.amber, icon:<Clock size={12}/> };
     return { label:"PENDIENTE", color:t.lions, icon:<AlertTriangle size={12}/> };
   };
 
@@ -146,23 +146,40 @@ export function Agenda({ t, paises = [] }) {
   };
 
   const renderActions = (m) => {
-    const { id, events, current_status, playlist_url } = m;
+    const { id, events = [], current_status, playlist_url } = m;
     const isProd = isAdmin || isProducer;
-    const confirmed = events.some(e=>e.event_type==='producer_confirmed') || current_status==='chequeo';
+    const confirmed = events.some(e=>e.event_type==='producer_confirmed') || 
+                      events.some(e=>e.event_type==='club_confirmed') || 
+                      ['producer_confirmed', 'club_confirmed', 'all_confirmed', 'chequeo'].includes(current_status);
     const btn = (bg,c) => ({ padding:"4px 10px", borderRadius:6, border:"none", background:bg, color:c, fontSize:9, fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontFamily:FONT });
-    // Ocultado por redundancia, se puede editar/confirmar haciendo clic directamente en el badge de estado
-    // if (!confirmed && isProd) return <button onClick={()=>setActiveMinuteEditor(m)} style={btn(t.lions,"#fff")}>Confirmar</button>;
-    if (confirmed && isAdmin && !playlist_url) {
+    
+    if (confirmed && isAdmin) {
       if (activeUpload === id) return (
         <div style={{display:"flex",gap:4}}>
-          <input type="text" placeholder="Link..." value={uploadUrl} onChange={e=>setUploadUrl(e.target.value)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${t.border}`,background:t.bg,color:t.text,fontSize:10,width:120}}/>
+          <input 
+            type="text" 
+            placeholder="Link..." 
+            value={uploadUrl} 
+            onChange={e=>setUploadUrl(e.target.value)} 
+            style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${t.border}`,background:t.bg,color:t.text,fontSize:10,width:120}}
+          />
           <button onClick={()=>handleEvent(id,'playlist_uploaded',{playlist_url:uploadUrl})} style={btn(t.accent,"#fff")}>Ok</button>
           <button onClick={()=>setActiveUpload(null)} style={btn(t.bg,t.text)}>x</button>
         </div>
       );
-      return <button onClick={()=>setActiveUpload(id)} style={btn(`${t.lions}15`,t.lions)}><UploadCloud size={12}/>Subir</button>;
+      return (
+        <button 
+          onClick={() => { 
+            setActiveUpload(id); 
+            setUploadUrl(playlist_url || ""); 
+          }} 
+          style={btn(playlist_url ? `${t.green}15` : `${t.lions}15`, playlist_url ? t.green : t.lions)}
+        >
+          <UploadCloud size={12}/>
+          {playlist_url ? "Editar" : "Subir"}
+        </button>
+      );
     }
-    if (!confirmed) return null;
     return null;
   };
 

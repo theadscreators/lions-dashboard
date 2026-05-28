@@ -427,7 +427,7 @@ const getStatusInfo = (match, t) => {
     return { label: "LISTO", color: t.green };
   }
   if (operational_notes || ['club_confirmed', 'producer_confirmed', 'all_confirmed'].includes(current_status)) {
-    return { label: "CHEQUEO", color: t.amber };
+    return { label: "CHEQUEANDO", color: t.amber };
   }
   return { label: "PENDIENTE", color: t.lions };
 };
