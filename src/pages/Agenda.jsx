@@ -64,10 +64,11 @@ export function Agenda({ t, paises = [] }) {
   const [activeMinuteEditor, setActiveMinuteEditor] = useState(null);
 
   // Operators with assigned clubs see only their clubs; operators without assignments see everything
+  // Guests (no user) also see all matches in read-only mode via public RLS policies
   const myClubIds = profile?.club_ids || [];
   const filterClubId = (isAdmin || isProducer) ? null : (myClubIds.length > 0 ? myClubIds[0] : null);
   const { matches, loading, addMatchEvent, addMatch, updateMatch, updateClubClients } = useMatches(
-    filterClubId, !!user
+    filterClubId, true
   );
 
   if (loading) return <div style={{ color: t.muted, textAlign: "center", padding: 40, fontFamily: FONT }}>Cargando agenda...</div>;

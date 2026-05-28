@@ -82,6 +82,21 @@ export function Login({ onLogin, t, dark, loading: authLoading }) {
         >
           {submitting ? "INGRESANDO..." : "INGRESAR"}
         </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
+          <div style={{ flex: 1, height: 1, background: t.border }} />
+          <span style={{ fontSize: 9, color: t.muted, fontWeight: 600, letterSpacing: 1 }}>O</span>
+          <div style={{ flex: 1, height: 1, background: t.border }} />
+        </div>
+
+        <button
+          onClick={() => { window.location.href = (import.meta.env.BASE_URL || '/') + 'agenda'; }}
+          style={{ marginTop: 4, width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${t.border}`, background: "transparent", color: t.muted, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: FONT, letterSpacing: 0.5, transition: "all 0.2s" }}
+          onMouseOver={e => { e.currentTarget.style.borderColor = t.accent; e.currentTarget.style.color = t.accent; }}
+          onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.muted; }}
+        >
+          📅 VER AGENDA
+        </button>
       </div>
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}`}</style>
     </div>

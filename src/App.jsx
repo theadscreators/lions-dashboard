@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { T, FONT } from "./theme/theme";
 import { PAISES as FALLBACK_PAISES } from "./data/data_2026";
 import { LionsSVG } from "./components/ui/LionsSVG";
@@ -34,6 +34,8 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
     ? paises.flatMap(p => p.equipos).find(e => e.id === selectedTeam)
     : null;
 
+  const isGuest = !auth.user;
+
   return (
     <div style={{ minHeight: "100vh", background: t.bg, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
       {/* Header */}
@@ -41,26 +43,29 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxSizing: "border-box" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <LionsSVG height={40} dark={dark} />
-            {auth.profile && (
-              <div style={{ fontSize: 10, color: t.muted, fontWeight: 700, background: t.pill, padding: "3px 8px", borderRadius: 6, letterSpacing: 0.5 }}>
-                {auth.role.toUpperCase()}
-              </div>
-            )}
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="desktop-only">
-            <TopNav t={t} auth={auth} />
-          </div>
+          {/* Desktop Navigation — only for logged-in users */}
+          {!isGuest && (
+            <div className="desktop-only">
+              <TopNav t={t} auth={auth} />
+            </div>
+          )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <RefreshButtons t={t} auth={auth} />
+            {!isGuest && <RefreshButtons t={t} auth={auth} />}
             <button onClick={() => setDark(!dark)} style={{ background: t.pill, border: "none", width: 36, height: 36, borderRadius: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, transition: "all 0.2s" }} title="Toggle Theme">
               {dark ? "☀️" : "🌙"}
             </button>
-            <button onClick={auth.logout} style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 10, fontWeight: 700, color: t.muted, cursor: "pointer", fontFamily: FONT, letterSpacing: 0.5, transition: "all 0.15s" }} onMouseOver={e => e.currentTarget.style.borderColor = t.accent} onMouseOut={e => e.currentTarget.style.borderColor = t.border}>
-              SALIR
-            </button>
+            {isGuest ? (
+              <button onClick={() => { window.location.href = import.meta.env.BASE_URL || '/'; }} style={{ background: t.accent, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 10, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: FONT, letterSpacing: 0.5, transition: "all 0.15s" }}>
+                LOG IN
+              </button>
+            ) : (
+              <button onClick={auth.logout} style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 10, fontWeight: 700, color: t.muted, cursor: "pointer", fontFamily: FONT, letterSpacing: 0.5, transition: "all 0.15s" }} onMouseOver={e => e.currentTarget.style.borderColor = t.accent} onMouseOut={e => e.currentTarget.style.borderColor = t.border}>
+                SALIR
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -123,10 +128,12 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
         )}
       </main>
 
-      {/* Mobile Navigation */}
-      <div className="mobile-only">
-        <BottomNav t={t} auth={auth} />
-      </div>
+      {/* Mobile Navigation — only for logged-in users */}
+      {!isGuest && (
+        <div className="mobile-only">
+          <BottomNav t={t} auth={auth} />
+        </div>
+      )}
 
       <style>{`
         body { margin: 0; background: ${t.bg}; color: ${t.text}; }
@@ -174,7 +181,7 @@ export default function App() {
   }
 
   // Check if it's a public route
-  const isPublicRoute = window.location.pathname.includes('/public/');
+  const isPublicRoute = window.location.pathname.includes('/public/') || window.location.pathname.endsWith('/agenda');
 
   // IF NOT LOGGED IN and NOT PUBLIC -> SHOW LOGIN IMMEDIATELY
   if (!auth.user && !isPublicRoute) {
@@ -232,6 +239,11 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/public/:id" element={<PublicMatch t={t} />} />
+        <Route path="/agenda" element={
+          auth.user
+            ? <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />
+            : <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={[]} addCountry={() => {}} addClub={() => {}} />
+        } />
         <Route path="*" element={<MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />} />
       </Routes>
     </BrowserRouter>
