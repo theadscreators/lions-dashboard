@@ -181,7 +181,7 @@ export default function App() {
   }
 
   // Check if it's a public route
-  const isPublicRoute = window.location.pathname.includes('/public/') || window.location.pathname.endsWith('/agenda');
+  const isPublicRoute = window.location.pathname.includes('/public/') || window.location.pathname.includes('/agenda');
 
   // IF NOT LOGGED IN and NOT PUBLIC -> SHOW LOGIN IMMEDIATELY
   if (!auth.user && !isPublicRoute) {
@@ -239,12 +239,17 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/public/:id" element={<PublicMatch t={t} />} />
-        <Route path="/agenda" element={
-          auth.user
-            ? <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />
-            : <MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={[]} addCountry={() => {}} addClub={() => {}} />
+        <Route path="*" element={
+          <MainLayout 
+            dark={dark} 
+            setDark={setDark} 
+            t={t} 
+            auth={auth} 
+            paises={auth.user ? paises : []} 
+            addCountry={auth.user ? addCountry : () => {}} 
+            addClub={auth.user ? addClub : () => {}} 
+          />
         } />
-        <Route path="*" element={<MainLayout dark={dark} setDark={setDark} t={t} auth={auth} paises={paises} addCountry={addCountry} addClub={addClub} />} />
       </Routes>
     </BrowserRouter>
   );
