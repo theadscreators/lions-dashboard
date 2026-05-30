@@ -21,7 +21,7 @@ import { WorkLog } from "./pages/WorkLog";
 import { TeamDetail } from "./components/teams/TeamDetail";
 import { PublicMatch } from "./pages/PublicMatch";
 
-function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
+function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub, updateClubClients }) {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const location = useLocation();
 
@@ -73,7 +73,7 @@ function MainLayout({ dark, setDark, t, auth, paises, addCountry, addClub }) {
       {/* Main Content Area */}
       <main style={{ flex: 1, padding: "20px 20px 80px", maxWidth: 1200, margin: "0 auto", width: "100%", boxSizing: "border-box", position: "relative" }}>
         {selectedTeam && teamData ? (
-          <TeamDetail equipo={teamData} t={t} onBack={() => setSelectedTeam(null)} />
+          <TeamDetail equipo={teamData} t={t} auth={auth} onUpdateClients={updateClubClients} onBack={() => setSelectedTeam(null)} />
         ) : (
           <Routes>
             <Route path="/" element={<Panel t={t} auth={auth} paises={paises} />} />
@@ -158,7 +158,7 @@ export default function App() {
   const [dark, setDark] = useState(false);
   const t = dark ? T.dark : T.light;
   const auth = useAuth();
-  const { paises: supabasePaises, loading: dataLoading, error: dataError, addCountry, addClub } = useClubs(!!auth.user);
+  const { paises: supabasePaises, loading: dataLoading, error: dataError, addCountry, addClub, updateClubClients } = useClubs(!!auth.user);
 
   // Use Supabase data if available, otherwise fallback to local data
   const paises = supabasePaises.length > 0 ? supabasePaises : (auth.user ? [] : FALLBACK_PAISES);
@@ -166,6 +166,25 @@ export default function App() {
   useEffect(() => {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     setDark(isDark);
+  }, []);
+
+  // Redirigir de la raíz a la agenda si vienen con parámetros de país (?pais=peru, etc.)
+  // Esto permite compartir links tipo: /?pais=peru que devuelven HTTP 200 en GitHub Pages
+  // y por ende WhatsApp muestra la vista previa con el logo y descripción correctamente.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('pais') || params.has('country')) {
+        const path = window.location.pathname;
+        const base = import.meta.env.BASE_URL || '/';
+        const isRoot = path === '/' || path === base || path === base.slice(0, -1);
+        if (isRoot) {
+          window.location.replace(base + 'agenda' + window.location.search);
+        }
+      }
+    } catch (e) {
+      console.warn("Redirect error:", e);
+    }
   }, []);
 
   // Show loading while checking auth
@@ -248,6 +267,7 @@ export default function App() {
             paises={auth.user ? paises : []} 
             addCountry={auth.user ? addCountry : () => {}} 
             addClub={auth.user ? addClub : () => {}} 
+            updateClubClients={auth.user ? updateClubClients : () => {}}
           />
         } />
       </Routes>
