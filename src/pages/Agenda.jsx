@@ -152,6 +152,7 @@ export function Agenda({ t, paises = [] }) {
     return { start, end };
   };
   const bounds = getWeekBounds(weekOffset);
+  const showPrevArrow = getWeekBounds(weekOffset - 1).start >= new Date(2026, 4, 21);
 
   const getStatusInfo = (m) => {
     const { current_status, events = [], playlist_url } = m;
@@ -432,9 +433,22 @@ export function Agenda({ t, paises = [] }) {
           ))}
         </div>
 
-        {/* Center: Week nav centered */}
+         {/* Center: Week nav centered */}
         <div style={{display:"flex",alignItems:"center",gap:8,background:t.card,border:`1px solid ${t.border}`,padding:"4px 12px",borderRadius:8,justifyContent:"center"}}>
-          <button onClick={()=>setWeekOffset(p=>p-1)} style={{background:"none",border:"none",color:t.text,cursor:"pointer",fontSize:12,padding:"0 4px"}}>◀</button>
+          <button 
+            onClick={()=>setWeekOffset(p=>p-1)} 
+            style={{
+              background:"none",
+              border:"none",
+              color:t.text,
+              cursor: showPrevArrow ? "pointer" : "default",
+              fontSize:12,
+              padding:"0 4px",
+              visibility: showPrevArrow ? "visible" : "hidden"
+            }}
+          >
+            ◀
+          </button>
           <span style={{fontSize:10,fontWeight:900,color:t.text,letterSpacing:0.5,minWidth:120,textAlign:"center"}}>
             {weekOffset===0?"SEMANA ACTUAL":`${format(bounds.start,'d MMM',{locale:es}).toUpperCase()} – ${format(bounds.end,'d MMM',{locale:es}).toUpperCase()}`}
           </span>
