@@ -331,9 +331,34 @@ export function Agenda({ t, paises = [] }) {
           {m.home_club_id ? (
             <>
               {m.playlist_url ? (
-                <a href={m.playlist_url} target="_blank" rel="noreferrer" style={pillStyle(`${t.green}12`, t.green, `1px solid ${t.green}30`)}>
-                  ⬇ VER CARPETA
-                </a>
+                <>
+                  <a href={m.playlist_url} target="_blank" rel="noreferrer" style={pillStyle(`${t.green}12`, t.green, `1px solid ${t.green}30`)}>
+                    ⬇ VER CARPETA
+                  </a>
+                  {isAdmin && (
+                    activeUpload === m.id ? (
+                      <div style={{display:"flex",gap:4}}>
+                        <input 
+                          type="text" 
+                          placeholder="Nuevo link..." 
+                          value={uploadUrl} 
+                          onChange={e=>setUploadUrl(e.target.value)} 
+                          style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${t.border}`,background:t.bg,color:t.text,fontSize:10,width:120}}
+                        />
+                        <button onClick={()=>handleEvent(m.id,'playlist_uploaded',{playlist_url:uploadUrl})} style={{padding:"4px 8px",borderRadius:6,border:"none",background:t.accent,color:"#fff",fontSize:9,fontWeight:800,cursor:"pointer",fontFamily:FONT}}>Ok</button>
+                        <button onClick={()=>setActiveUpload(null)} style={{padding:"4px 8px",borderRadius:6,border:"none",background:t.bg,color:t.text,fontSize:9,fontWeight:800,cursor:"pointer",fontFamily:FONT}}>x</button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => { setActiveUpload(m.id); setUploadUrl(m.playlist_url || ""); }}
+                        style={{...pillStyle(`${t.amber}12`, t.amber, `1px solid ${t.amber}30`), cursor:"pointer", border:`1px solid ${t.amber}30`}}
+                        title="Modificar link de carpeta"
+                      >
+                        ✏️ Editar
+                      </button>
+                    )
+                  )}
+                </>
               ) : (
                 <>
                   {!isVallas && (
