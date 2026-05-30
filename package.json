@@ -6,7 +6,7 @@
   "homepage": "https://theadscreators.github.io/lions/",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
+    "build": "vite build && node -e \"const fs = require('fs'); fs.copyFileSync('dist/index.html', 'dist/404.html'); if (!fs.existsSync('dist/agenda')) fs.mkdirSync('dist/agenda'); fs.copyFileSync('dist/index.html', 'dist/agenda/index.html');\"",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
