@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./logos/lions.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lions Sports Media — Agenda</title>
+    
+    <!-- Meta tags para compartir en WhatsApp, Facebook, etc. -->
+    <meta name="description" content="Agenda y estado de producción de transmisiones de Lions Sports Media." />
+    
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Lions Sports Media — Agenda" />
+    <meta property="og:description" content="Seguimiento y estado de producción de transmisiones en vivo." />
+    <meta property="og:image" content="https://theadscreators.github.io/lions-dashboard/logos/lions.png" />
+    <meta property="og:url" content="https://theadscreators.github.io/lions-dashboard/agenda" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Lions Sports Media — Agenda" />
+    <meta property="twitter:description" content="Seguimiento y estado de producción de transmisiones en vivo." />
+    <meta property="twitter:image" content="https://theadscreators.github.io/lions-dashboard/logos/lions.png" />
+
+    <script>
+      // Redirección inmediata a la ruta de la aplicación
+      try {
+        const base = '/lions-dashboard/';
+        window.location.replace(base + 'agenda' + window.location.search);
+      } catch (e) {
+        window.location.replace('/lions-dashboard/agenda');
+      }
+    </script>
+  </head>
+  <body>
+    <div style="min-height: 100vh; background: #0b0f19; display: flex; align-items: center; justify-content: center; font-family: sans-serif; color: #8a9fc2;">
+      <div style="text-align: center;">
+        <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">Cargando Agenda de Lions Sports Media...</div>
+      </div>
+    </div>
+  </body>
+</html>
