@@ -118,7 +118,7 @@ export function useMatches(clubId = null, ready = true) {
           ...m,
           home_club,
           current_status: status,
-          playlist_url: m.playlist_url || matchEvents.find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
+          playlist_url: m.playlist_url || [...matchEvents].reverse().find(e => e.event_type === 'playlist_uploaded')?.payload?.playlist_url || null,
           events: matchEvents,
           // Flattened data for easier access
           country_flag: flag,
