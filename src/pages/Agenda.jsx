@@ -52,9 +52,34 @@ function FlagWithTooltip({ code, tooltipLines = [] }) {
   );
 }
 
+// Map friendly country names/codes to internal filter codes
+const COUNTRY_ALIASES = {
+  chile: 'cl', cl: 'cl',
+  ecuador: 'ec', ec: 'ec',
+  peru: 'pe', perú: 'pe', pe: 'pe',
+  paraguay: 'py', py: 'py',
+};
+
+function getInitialCountry() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromParam = params.get('pais') || params.get('country') || '';
+    if (fromParam) {
+      const code = COUNTRY_ALIASES[fromParam.toLowerCase()];
+      if (code) return code;
+    }
+    const hash = window.location.hash.replace('#', '').toLowerCase();
+    if (hash) {
+      const code = COUNTRY_ALIASES[hash];
+      if (code) return code;
+    }
+  } catch { /* ignore */ }
+  return 'all';
+}
+
 export function Agenda({ t, paises = [] }) {
   const { user, profile, isAdmin, isProducer } = useAuth();
-  const [selectedCountry, setSelectedCountry] = useState("all");
+  const [selectedCountry, setSelectedCountry] = useState(getInitialCountry);
   const [uploadUrl, setUploadUrl] = useState("");
   const [activeUpload, setActiveUpload] = useState(null);
   const [showAddMatch, setShowAddMatch] = useState(false);
