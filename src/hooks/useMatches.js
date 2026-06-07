@@ -11,18 +11,22 @@ export function useMatches(clubId = null, ready = true, startDate = null, endDat
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Convert Date objects to string primitives to avoid infinite re-render loops in useCallback
+  const startStr = startDate instanceof Date ? startDate.toISOString() : (startDate || "");
+  const endStr = endDate instanceof Date ? endDate.toISOString() : (endDate || "");
+
   const fetchMatches = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       // Define a window of time for the agenda
       let pastLimit, futureLimit;
-      if (startDate && endDate) {
+      if (startStr && endStr) {
         // Use the displayed week bounds, but pad them slightly for safety (e.g., 1 day)
-        pastLimit = new Date(startDate);
+        pastLimit = new Date(startStr);
         pastLimit.setDate(pastLimit.getDate() - 1);
         
-        futureLimit = new Date(endDate);
+        futureLimit = new Date(endStr);
         futureLimit.setDate(futureLimit.getDate() + 1);
       } else {
         const now = new Date();
@@ -147,7 +151,7 @@ export function useMatches(clubId = null, ready = true, startDate = null, endDat
     } finally {
       setLoading(false);
     }
-  }, [clubId, startDate, endDate]);
+  }, [clubId, startStr, endStr]);
 
   useEffect(() => {
     if (ready) {
