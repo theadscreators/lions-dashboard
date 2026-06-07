@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
  * @param {string|null} clubId - Filter by club ID, or null for all matches.
  * @param {boolean} ready - Only fetch when true (i.e., user is authenticated).
  */
-export function useMatches(clubId = null, ready = true) {
+export function useMatches(clubId = null, ready = true, startDate = null, endDate = null) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,13 +15,23 @@ export function useMatches(clubId = null, ready = true) {
     setLoading(true);
     setError(null);
     try {
-      // Define a window of time for the agenda (e.g., -10 days to +30 days)
-      const now = new Date();
-      const futureLimit = new Date();
-      futureLimit.setDate(futureLimit.getDate() + 30);
-      
-      const pastLimit = new Date();
-      pastLimit.setDate(pastLimit.getDate() - 10);
+      // Define a window of time for the agenda
+      let pastLimit, futureLimit;
+      if (startDate && endDate) {
+        // Use the displayed week bounds, but pad them slightly for safety (e.g., 1 day)
+        pastLimit = new Date(startDate);
+        pastLimit.setDate(pastLimit.getDate() - 1);
+        
+        futureLimit = new Date(endDate);
+        futureLimit.setDate(futureLimit.getDate() + 1);
+      } else {
+        const now = new Date();
+        futureLimit = new Date();
+        futureLimit.setDate(futureLimit.getDate() + 30);
+        
+        pastLimit = new Date();
+        pastLimit.setDate(pastLimit.getDate() - 10);
+      }
 
       // Fetch matches within the time window
       let query = supabase
@@ -137,7 +147,7 @@ export function useMatches(clubId = null, ready = true) {
     } finally {
       setLoading(false);
     }
-  }, [clubId]);
+  }, [clubId, startDate, endDate]);
 
   useEffect(() => {
     if (ready) {

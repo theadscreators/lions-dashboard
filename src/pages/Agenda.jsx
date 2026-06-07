@@ -77,6 +77,53 @@ function getInitialCountry() {
   return 'all';
 }
 
+const getWeekBounds = (offset) => {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  
+  // Base Thursday of the actual current calendar week
+  const diffToThursday = (day - 4 + 7) % 7;
+  const baseThursday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToThursday);
+  baseThursday.setHours(0,0,0,0);
+  
+  // Standard end Wednesday of actual current calendar week
+  const baseWednesday = new Date(baseThursday);
+  baseWednesday.setDate(baseThursday.getDate() + 6);
+  
+  // If entering (offset 0) and it is Mon, Tue, or Wed, we extend baseWednesday by 7 days
+  const enteringEndWednesday = new Date(baseWednesday);
+  if (day === 1 || day === 2 || day === 3) {
+    enteringEndWednesday.setDate(baseWednesday.getDate() + 7);
+  }
+  
+  let start, end;
+  if (offset === 0) {
+    start = baseThursday;
+    end = enteringEndWednesday;
+  } else if (offset > 0) {
+    // Start from the Thursday following enteringEndWednesday
+    start = new Date(enteringEndWednesday);
+    start.setDate(enteringEndWednesday.getDate() + 1 + (offset - 1) * 7);
+    start.setHours(0,0,0,0);
+    
+    end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23,59,59,999);
+  } else {
+    // For past weeks (offset < 0)
+    start = new Date(baseThursday);
+    start.setDate(baseThursday.getDate() + offset * 7);
+    start.setHours(0,0,0,0);
+    
+    end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23,59,59,999);
+  }
+  
+  return { start, end };
+};
+
 export function Agenda({ t, paises = [] }) {
   const { user, profile, isAdmin, isProducer } = useAuth();
   const [selectedCountry, setSelectedCountry] = useState(getInitialCountry);
@@ -88,15 +135,16 @@ export function Agenda({ t, paises = [] }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [activeMinuteEditor, setActiveMinuteEditor] = useState(null);
 
+  const bounds = getWeekBounds(weekOffset);
+  const showPrevArrow = getWeekBounds(weekOffset - 1).start >= new Date(2026, 4, 21);
+
   // Operators with assigned clubs see only their clubs; operators without assignments see everything
   // Guests (no user) also see all matches in read-only mode via public RLS policies
   const myClubIds = profile?.club_ids || [];
   const filterClubId = (isAdmin || isProducer) ? null : (myClubIds.length > 0 ? myClubIds[0] : null);
   const { matches, loading, addMatchEvent, addMatch, updateMatch, updateClubClients } = useMatches(
-    filterClubId, true
+    filterClubId, true, bounds.start, bounds.end
   );
-
-  if (loading) return <div style={{ color: t.muted, textAlign: "center", padding: 40, fontFamily: FONT }}>Cargando agenda...</div>;
 
   const TZ = { cl:'America/Santiago', ec:'America/Guayaquil', pe:'America/Lima', py:'America/Asuncion' };
 
@@ -104,55 +152,6 @@ export function Agenda({ t, paises = [] }) {
     const tz = TZ[cc?.toLowerCase()] || 'America/Argentina/Buenos_Aires';
     return new Date(ds).toLocaleTimeString('es-AR', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false });
   };
-
-  const getWeekBounds = (offset) => {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-    
-    // Base Thursday of the actual current calendar week
-    const diffToThursday = (day - 4 + 7) % 7;
-    const baseThursday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diffToThursday);
-    baseThursday.setHours(0,0,0,0);
-    
-    // Standard end Wednesday of actual current calendar week
-    const baseWednesday = new Date(baseThursday);
-    baseWednesday.setDate(baseThursday.getDate() + 6);
-    
-    // If entering (offset 0) and it is Mon, Tue, or Wed, we extend baseWednesday by 7 days
-    const enteringEndWednesday = new Date(baseWednesday);
-    if (day === 1 || day === 2 || day === 3) {
-      enteringEndWednesday.setDate(baseWednesday.getDate() + 7);
-    }
-    
-    let start, end;
-    if (offset === 0) {
-      start = baseThursday;
-      end = enteringEndWednesday;
-    } else if (offset > 0) {
-      // Start from the Thursday following enteringEndWednesday
-      start = new Date(enteringEndWednesday);
-      start.setDate(enteringEndWednesday.getDate() + 1 + (offset - 1) * 7);
-      start.setHours(0,0,0,0);
-      
-      end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23,59,59,999);
-    } else {
-      // For past weeks (offset < 0)
-      start = new Date(baseThursday);
-      start.setDate(baseThursday.getDate() + offset * 7);
-      start.setHours(0,0,0,0);
-      
-      end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23,59,59,999);
-    }
-    
-    return { start, end };
-  };
-  const bounds = getWeekBounds(weekOffset);
-  const showPrevArrow = getWeekBounds(weekOffset - 1).start >= new Date(2026, 4, 21);
 
   const getStatusInfo = (m) => {
     const { current_status, events = [], playlist_url } = m;
@@ -509,18 +508,82 @@ export function Agenda({ t, paises = [] }) {
         />
       )}
 
+      {weekOffset >= 3 && (
+        <div style={{
+          background: `${t.lions}10`,
+          border: `1.5px solid ${t.lions}30`,
+          borderRadius: 12,
+          padding: "16px 20px",
+          marginBottom: 20,
+          color: t.lions,
+          fontSize: 12,
+          fontWeight: 700,
+          textAlign: "center",
+          lineHeight: "1.5",
+          animation: "fadeIn 0.3s"
+        }}>
+          ⚠️ Aún no están cargados los partidos siguientes a futuro. Pedirle al administrador que actualice para ver los siguientes partidos.
+        </div>
+      )}
+
       <div style={{display:"flex",flexDirection:"column",gap:20}}>
-        {keys.map(key => (
-          <div key={key}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:12}}>
-              <div style={{height:"1px",flex:1,background:`linear-gradient(to right, transparent, ${t.border})`}}/>
-              <span style={{fontSize:10,fontWeight:900,color:t.muted,letterSpacing:2,textTransform:"uppercase",whiteSpace:"nowrap"}}>{key}</span>
-              <div style={{height:"1px",flex:1,background:`linear-gradient(to left, transparent, ${t.border})`}}/>
-            </div>
-            {renderGroup(groups[key])}
+        {loading ? (
+          <div style={{
+            color: t.muted,
+            textAlign: "center",
+            padding: "60px 20px",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: FONT,
+            background: t.card,
+            borderRadius: 12,
+            border: `1px solid ${t.border}`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12
+          }}>
+            <span style={{
+              fontSize: 24,
+              display: "inline-block"
+            }} className="spin-loader">
+              ⏳
+            </span>
+            <span>Obteniendo partidos de esta semana...</span>
           </div>
-        ))}
+        ) : keys.length === 0 ? (
+          <div style={{
+            color: t.muted,
+            textAlign: "center",
+            padding: "60px 20px",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: FONT,
+            background: t.card,
+            borderRadius: 12,
+            border: `1px solid ${t.border}`
+          }}>
+            No hay partidos programados para esta semana.
+          </div>
+        ) : (
+          keys.map(key => (
+            <div key={key}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:12}}>
+                <div style={{height:"1px",flex:1,background:`linear-gradient(to right, transparent, ${t.border})`}}/>
+                <span style={{fontSize:10,fontWeight:900,color:t.muted,letterSpacing:2,textTransform:"uppercase",whiteSpace:"nowrap"}}>{key}</span>
+                <div style={{height:"1px",flex:1,background:`linear-gradient(to left, transparent, ${t.border})`}}/>
+              </div>
+              {renderGroup(groups[key])}
+            </div>
+          ))
+        )}
       </div>
+
+      <style>{`
+        .spin-loader { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
