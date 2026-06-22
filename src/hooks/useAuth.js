@@ -19,7 +19,30 @@ export function AuthProvider({ children }) {
       .eq("id", userId)
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error("fetchProfile error:", error);
+      const isAuthError = 
+        error.message?.toLowerCase().includes("jwt") || 
+        error.message?.toLowerCase().includes("expired") || 
+        error.message?.toLowerCase().includes("invalid signature") ||
+        error.status === 401 ||
+        error.status === 403;
+        
+      if (isAuthError) {
+        console.warn("Stale or invalid session detected via fetchProfile. Clearing session...");
+        setUser(null);
+        setProfile(null);
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        });
+        supabase.auth.signOut().catch(() => {});
+      }
+      return null;
+    }
+
+    if (data) {
       const profileData = {
         ...data,
         club_ids: data.user_club_assignments?.map(a => a.club_id) || []

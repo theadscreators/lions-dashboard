@@ -61,6 +61,26 @@ export function useClubs(ready = false) {
     } catch (err) {
       console.error("Error fetching data from Supabase:", err);
       setError(err.message || "Error al cargar datos");
+      
+      const errMsg = err.message || "";
+      const isAuthError = 
+        errMsg.toLowerCase().includes("jwt") || 
+        errMsg.toLowerCase().includes("expired") || 
+        errMsg.toLowerCase().includes("invalid signature") ||
+        err.status === 401 ||
+        err.status === 403;
+        
+      if (isAuthError) {
+        console.warn("Detected expired or invalid session in useClubs. Cleaning and reloading...");
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        });
+        supabase.auth.signOut().catch(() => {}).then(() => {
+          window.location.reload();
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -129,6 +149,7 @@ export function useClubs(ready = false) {
           notas: club.notes || "",
           tsdbName: "", // Not used anymore
           clientes: (clientsByClub[club.id] || []).map(cl => ({
+            id: cl.id,
             categoria: cl.category, // 'LIONS', 'CLUB', 'OTROS'
             nombre: cl.name,
             minutos: Number(cl.minutes) || 0,
@@ -177,5 +198,64 @@ export function useClubs(ready = false) {
     }
   };
 
-  return { paises, loading, error, refetch: fetchAll, addCountry, addClub };
+  const updateClubClients = async (clubId, newClients) => {
+    try {
+      const { data: current, error: fetchErr } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("club_id", clubId);
+      if (fetchErr) throw fetchErr;
+
+      const currentIds = (current || []).map(c => c.id);
+      const newIds = newClients.filter(c => c.id).map(c => c.id);
+      const deletedIds = currentIds.filter(id => !newIds.includes(id));
+
+      if (deletedIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from("clients")
+          .delete()
+          .in("id", deletedIds);
+        if (delErr) throw delErr;
+      }
+
+      const toInsert = newClients.filter(c => !c.id).map(c => ({
+        club_id: clubId,
+        name: c.nombre,
+        category: c.categoria.toUpperCase(),
+        minutes: Number(c.minutos) || 0,
+        bonified: Number(c.bonificados) || 0
+      }));
+
+      const toUpdate = newClients.filter(c => c.id).map(c => ({
+        id: c.id,
+        club_id: clubId,
+        name: c.nombre,
+        category: c.categoria.toUpperCase(),
+        minutes: Number(c.minutos) || 0,
+        bonified: Number(c.bonificados) || 0
+      }));
+
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase
+          .from("clients")
+          .insert(toInsert);
+        if (insErr) throw insErr;
+      }
+
+      if (toUpdate.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from("clients")
+          .upsert(toUpdate);
+        if (upsertErr) throw upsertErr;
+      }
+
+      await fetchAll();
+      return true;
+    } catch (err) {
+      console.error("Error updating club clients:", err?.message || err?.details || err);
+      return false;
+    }
+  };
+
+  return { paises, loading, error, refetch: fetchAll, addCountry, addClub, updateClubClients };
 }

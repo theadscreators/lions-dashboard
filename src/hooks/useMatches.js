@@ -148,6 +148,26 @@ export function useMatches(clubId = null, ready = true, startDate = null, endDat
     } catch (err) {
       console.error("Error fetching matches:", err);
       setError(err.message);
+      
+      const errMsg = err.message || "";
+      const isAuthError = 
+        errMsg.toLowerCase().includes("jwt") || 
+        errMsg.toLowerCase().includes("expired") || 
+        errMsg.toLowerCase().includes("invalid signature") ||
+        err.status === 401 ||
+        err.status === 403;
+        
+      if (isAuthError) {
+        console.warn("Detected expired or invalid session in useMatches. Cleaning session and reloading...");
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        });
+        supabase.auth.signOut().catch(() => {}).then(() => {
+          window.location.reload();
+        });
+      }
     } finally {
       setLoading(false);
     }
